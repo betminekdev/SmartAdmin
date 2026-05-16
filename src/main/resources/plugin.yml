@@ -4,13 +4,16 @@ main: cz.betminekdev.smartadmin.SmartAdminPlugin
 api-version: "1.21"
 author: BetminekDev
 description: Smart staff assistant for Minecraft servers.
+
 libraries:
   - org.xerial:sqlite-jdbc:3.53.1.0
+
 commands:
   smartadmin:
     description: Main SmartAdmin staff assistant command
     aliases: [sa, si]
     usage: /smartadmin help
+
 permissions:
   smartadmin.admin:
     description: Full access to SmartAdmin.
@@ -25,5 +28,5 @@ permissions:
     description: Can receive SmartAdmin staff alerts.
     default: op
   smartadmin.bypass:
-    description: Excludes a player from risk scoring unless configured otherwise.
+    description: Excludes a player from risk scoring unless config says otherwise.
     default: false

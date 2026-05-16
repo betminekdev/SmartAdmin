@@ -53,7 +53,7 @@ SmartAdmin is not a classic anti-cheat and does not replace human moderation. It
 
 Main command: `/smartadmin`  
 Preferred command: `/sa`  
-Aliases: `/sa`, `/si`
+Optional alias: `/si`
 
 | Command | Description |
 | --- | --- |

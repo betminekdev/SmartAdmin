@@ -57,7 +57,7 @@ public final class SmartAdminPlugin extends JavaPlugin {
         registerCommands();
         restartDecayTask();
 
-        getLogger().info("SmartAdmin " + getDescription().getVersion() + " enabled. Command root: /smartadmin and /sa.");
+        getLogger().info("SmartAdmin " + getDescription().getVersion() + " enabled. Command root: /smartadmin, aliases: /sa and /si.");
     }
 
     @Override
@@ -108,6 +108,7 @@ public final class SmartAdminPlugin extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
+
         SmartAdminCommand executor = new SmartAdminCommand(this, storageService, timelineService, watchService, this::config, this::reloadSmartAdmin);
         command.setExecutor(executor);
         command.setTabCompleter(executor);
@@ -121,6 +122,7 @@ public final class SmartAdminPlugin extends JavaPlugin {
         if (!smartAdminConfig.decayEnabled() || smartAdminConfig.decayAmount() <= 0) {
             return;
         }
+
         long intervalTicks = smartAdminConfig.decayIntervalMinutes() * 60L * 20L;
         decayTask = getServer().getScheduler().runTaskTimer(this, riskService::decayScores, intervalTicks, intervalTicks);
     }
