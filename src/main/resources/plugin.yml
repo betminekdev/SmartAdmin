@@ -1,0 +1,29 @@
+name: ServerIntel
+version: 0.1.0-beta
+main: cz.betminekdev.serverintel.ServerIntelPlugin
+api-version: "1.21"
+author: BetminekDev
+description: Smart staff assistant for Minecraft servers.
+libraries:
+  - org.xerial:sqlite-jdbc:3.53.1.0
+commands:
+  smartadmin:
+    description: Main ServerIntel staff assistant command
+    aliases: [sa]
+    usage: /smartadmin help
+permissions:
+  serverintel.admin:
+    description: Full access to ServerIntel.
+    default: op
+  serverintel.staff:
+    description: Can use profile, timeline, watch, and alerts commands.
+    default: op
+  serverintel.reload:
+    description: Can reload ServerIntel configuration.
+    default: op
+  serverintel.alerts:
+    description: Can receive ServerIntel staff alerts.
+    default: op
+  serverintel.bypass:
+    description: Excludes a player from risk scoring unless configured otherwise.
+    default: false

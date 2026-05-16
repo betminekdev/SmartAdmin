@@ -1,0 +1,64 @@
+messages:
+  prefix: "&8[&bServerIntel&8]&r "
+
+risk:
+  max-score: 100
+  decay-enabled: true
+  decay-amount: 2
+  decay-interval-minutes: 30
+  score-bypassed-players: false
+
+mining:
+  enabled: true
+  valuable-ores:
+    DIAMOND_ORE: 3
+    DEEPSLATE_DIAMOND_ORE: 3
+    ANCIENT_DEBRIS: 5
+    EMERALD_ORE: 2
+    DEEPSLATE_EMERALD_ORE: 2
+    GOLD_ORE: 1
+    DEEPSLATE_GOLD_ORE: 1
+    IRON_ORE: 1
+    DEEPSLATE_IRON_ORE: 1
+  burst-detection:
+    enabled: true
+    time-window-minutes: 10
+    diamond-threshold: 10
+    ancient-debris-threshold: 6
+    extra-risk: 15
+  new-player:
+    enabled: true
+    max-playtime-minutes: 60
+    valuable-ore-threshold: 6
+    extra-risk: 8
+
+signals:
+  block-place:
+    enabled: true
+    tnt-risk: 4
+    lava-risk: 3
+  chat:
+    enabled: true
+    spam-message-count: 5
+    spam-window-seconds: 8
+    spam-risk: 5
+    suspicious-link-risk: 4
+
+alerts:
+  enabled: true
+  threshold: 60
+  high-risk-threshold: 80
+  cooldown-seconds: 30
+
+storage:
+  type: sqlite
+  database-file: "plugins/ServerIntel/serverintel.db"
+  keep-data-days: 14
+
+watch:
+  enabled: true
+
+discord:
+  enabled: false
+  webhook-url: ""
+  high-risk-only: true
