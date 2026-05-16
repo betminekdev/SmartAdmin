@@ -37,3 +37,4 @@ tasks.test {
     dependsOn(smartAdminSelfTest)
     exclude("**/*")
 }
+

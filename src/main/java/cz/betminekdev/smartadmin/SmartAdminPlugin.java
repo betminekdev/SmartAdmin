@@ -127,3 +127,4 @@ public final class SmartAdminPlugin extends JavaPlugin {
         decayTask = getServer().getScheduler().runTaskTimer(this, riskService::decayScores, intervalTicks, intervalTicks);
     }
 }
+

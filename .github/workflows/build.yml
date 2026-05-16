@@ -32,3 +32,4 @@ jobs:
           name: SmartAdmin-jar
           path: build/libs/*.jar
           if-no-files-found: error
+
