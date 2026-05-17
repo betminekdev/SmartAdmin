@@ -26,6 +26,8 @@ SmartAdmin helps staff teams review suspicious player behavior using risk scores
 [*]/sa timeline <player>
 [*]/sa watch <player>
 [*]/sa alerts
+[*]/sa reset <player>
+[*]/sa note <player> <message>
 [*]/sa reload
 [*]/sa version
 [/LIST]
@@ -35,7 +37,7 @@ Aliases: [B]/sa[/B], [B]/si[/B]
 
 [B]Beta Warning[/B]
 
-SmartAdmin v0.1.0-beta is an early public beta. Test it on a staging server first and tune the configuration for your community.
+SmartAdmin v0.1.1-beta is an early public beta. Test it on a staging server first and tune the configuration for your community.
 
 [B]Moderation Note[/B]
 

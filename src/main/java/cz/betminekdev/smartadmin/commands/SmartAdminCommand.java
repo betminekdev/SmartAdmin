@@ -5,6 +5,7 @@ import cz.betminekdev.smartadmin.risk.RiskLevel;
 import cz.betminekdev.smartadmin.storage.PlayerProfile;
 import cz.betminekdev.smartadmin.storage.StorageService;
 import cz.betminekdev.smartadmin.timeline.TimelineEvent;
+import cz.betminekdev.smartadmin.timeline.TimelineEventType;
 import cz.betminekdev.smartadmin.timeline.TimelineService;
 import cz.betminekdev.smartadmin.util.MessageUtil;
 import cz.betminekdev.smartadmin.util.TimeUtil;
@@ -60,6 +61,8 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             case "reload" -> reload(sender);
             case "version" -> version(sender);
             case "evidence" -> evidence(sender, args);
+            case "reset" -> reset(sender, args);
+            case "note" -> note(sender, args);
             default -> {
                 MessageUtil.send(sender, config.get().prefix(), "&cUnknown command. Use &f/sa help&c.");
                 yield true;
@@ -72,11 +75,18 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             noPermission(sender);
             return true;
         }
-        MessageUtil.send(sender, config.get().prefix(), "&bSmartAdmin commands");
+        MessageUtil.send(sender, config.get().prefix(), "&bSmartAdmin &f" + plugin.getDescription().getVersion() + " &7- smart staff assistant.");
+        sender.sendMessage(MessageUtil.color("&7Collects server-side signals, timelines, and staff alerts for manual review."));
+        sender.sendMessage(MessageUtil.color("&7Main command: &b/smartadmin &8| &7Aliases: &b/sa&7, &b/si"));
+        sender.sendMessage(MessageUtil.color("&7Beta notice: &fUse on a staging server first and tune thresholds."));
+        sender.sendMessage(MessageUtil.color("&7Reminder: &fSmartAdmin is not an anti-cheat and does not auto-ban."));
+        sender.sendMessage(MessageUtil.color("&8&m-----------------------------------------------------"));
         sender.sendMessage(MessageUtil.color("&8- &b/sa profile <player> &7View risk score and recent signals."));
         sender.sendMessage(MessageUtil.color("&8- &b/sa timeline <player> &7View recent investigation timeline."));
         sender.sendMessage(MessageUtil.color("&8- &b/sa watch <player> &7Toggle live watch mode."));
         sender.sendMessage(MessageUtil.color("&8- &b/sa alerts &7Toggle personal staff alerts."));
+        sender.sendMessage(MessageUtil.color("&8- &b/sa reset <player> &7Reset a player's risk score."));
+        sender.sendMessage(MessageUtil.color("&8- &b/sa note <player> <message> &7Add a staff note to the timeline."));
         sender.sendMessage(MessageUtil.color("&8- &b/sa reload &7Reload configuration."));
         sender.sendMessage(MessageUtil.color("&8- &b/sa version &7Show plugin version."));
         sender.sendMessage(MessageUtil.color("&8- &b/sa evidence <player> &7Prepared investigation summary command."));
@@ -248,6 +258,89 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean reset(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("smartadmin.reset") && !sender.hasPermission("smartadmin.admin")) {
+            noPermission(sender);
+            return true;
+        }
+        if (args.length < 2) {
+            MessageUtil.send(sender, config.get().prefix(), "&cUsage: /sa reset <player>");
+            return true;
+        }
+
+        Optional<PlayerProfile> optionalProfile = findProfile(args[1]);
+        if (optionalProfile.isEmpty()) {
+            playerNotFound(sender);
+            return true;
+        }
+
+        PlayerProfile profile = optionalProfile.get();
+        try {
+            long now = System.currentTimeMillis();
+            storage.updateRisk(profile.uuid(), 0, now);
+            timelineService.record(
+                    profile.uuid(),
+                    profile.name(),
+                    TimelineEventType.STAFF_ACTION,
+                    null,
+                    0,
+                    "Risk score reset by " + sender.getName(),
+                    ""
+            );
+            MessageUtil.send(sender, config.get().prefix(), "&aRisk score reset for &f" + profile.name() + "&a.");
+        } catch (SQLException exception) {
+            MessageUtil.send(sender, config.get().prefix(), "&cCould not reset player risk score.");
+            plugin.getLogger().warning("Could not reset SmartAdmin risk score for " + profile.name() + ": " + exception.getMessage());
+        }
+        return true;
+    }
+
+    private boolean note(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("smartadmin.note") && !sender.hasPermission("smartadmin.admin")) {
+            noPermission(sender);
+            return true;
+        }
+        if (args.length < 3) {
+            MessageUtil.send(sender, config.get().prefix(), "&cUsage: /sa note <player> <message>");
+            return true;
+        }
+
+        Optional<PlayerProfile> optionalProfile = findProfile(args[1]);
+        if (optionalProfile.isEmpty()) {
+            playerNotFound(sender);
+            return true;
+        }
+
+        String note = joinArgs(args, 2).trim();
+        if (note.isEmpty()) {
+            MessageUtil.send(sender, config.get().prefix(), "&cNote text cannot be empty.");
+            return true;
+        }
+        int maxLength = config.get().noteMaxLength();
+        if (note.length() > maxLength) {
+            MessageUtil.send(sender, config.get().prefix(), "&cNote is too long. Maximum length is &f" + maxLength + " &ccharacters.");
+            return true;
+        }
+
+        PlayerProfile profile = optionalProfile.get();
+        try {
+            timelineService.record(
+                    profile.uuid(),
+                    profile.name(),
+                    TimelineEventType.STAFF_NOTE,
+                    null,
+                    0,
+                    "Staff note by " + sender.getName(),
+                    note
+            );
+            MessageUtil.send(sender, config.get().prefix(), "&aStaff note added for &f" + profile.name() + "&a.");
+        } catch (SQLException exception) {
+            MessageUtil.send(sender, config.get().prefix(), "&cCould not add staff note.");
+            plugin.getLogger().warning("Could not add SmartAdmin staff note for " + profile.name() + ": " + exception.getMessage());
+        }
+        return true;
+    }
+
     private Optional<PlayerProfile> findProfile(String name) {
         Player online = Bukkit.getPlayerExact(name);
         try {
@@ -283,6 +376,9 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         if (event.riskChange() > 0) {
             line.append(" &8(").append("&c+").append(event.riskChange()).append(" risk&8)");
         }
+        if (event.eventType() == TimelineEventType.STAFF_NOTE && event.details() != null && !event.details().isBlank()) {
+            line.append(" &7- &f").append(event.details());
+        }
         return line.toString();
     }
 
@@ -304,9 +400,9 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            return filter(List.of("help", "profile", "timeline", "watch", "alerts", "reload", "version", "evidence"), args[0]);
+            return filter(List.of("help", "profile", "timeline", "watch", "alerts", "reload", "version", "evidence", "reset", "note"), args[0]);
         }
-        if (args.length == 2 && List.of("profile", "timeline", "watch", "evidence").contains(args[0].toLowerCase(Locale.ROOT))) {
+        if (args.length == 2 && List.of("profile", "timeline", "watch", "evidence", "reset", "note").contains(args[0].toLowerCase(Locale.ROOT))) {
             return Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)
                     .filter(name -> name.toLowerCase(Locale.ROOT).startsWith(args[1].toLowerCase(Locale.ROOT)))
@@ -321,5 +417,16 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         return values.stream()
                 .filter(value -> value.startsWith(lowerPrefix))
                 .toList();
+    }
+
+    private String joinArgs(String[] args, int startIndex) {
+        StringBuilder builder = new StringBuilder();
+        for (int index = startIndex; index < args.length; index++) {
+            if (index > startIndex) {
+                builder.append(' ');
+            }
+            builder.append(args[index]);
+        }
+        return builder.toString();
     }
 }

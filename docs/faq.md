@@ -6,7 +6,7 @@ No. SmartAdmin is a smart staff assistant. It provides investigation signals and
 
 ## Does SmartAdmin auto-ban players?
 
-No. SmartAdmin does not auto-ban in `v0.1.0-beta` and does not recommend punishing without review.
+No. SmartAdmin does not auto-ban in `v0.1.1-beta` and does not recommend punishing without review.
 
 ## Can it detect xray perfectly?
 
@@ -32,6 +32,6 @@ SQLite. The default file is `plugins/SmartAdmin/smartadmin.db`.
 
 Use `/sa` for daily staff work. The full command is `/smartadmin`, and `/si` is also registered as an alias.
 
-## Is v0.1.0-beta production ready?
+## Is v0.1.1-beta production ready?
 
 It is a public beta. Test it on a staging server first, tune thresholds, and review staff workflows before using it on a live server.

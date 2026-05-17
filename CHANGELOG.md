@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.1-beta
+
+- Improved help command.
+- Added risk reset command.
+- Added staff notes.
+- Added permissions for reset and notes.
+
 ## v0.1.0-beta
 
 - Initial beta release.

@@ -5,7 +5,7 @@ Use this checklist on a local or staging Paper/Spigot server before publishing a
 ## Fresh Startup
 
 - Stop the server.
-- Place `SmartAdmin-0.1.0-beta.jar` in the `plugins` folder.
+- Place `SmartAdmin-0.1.1-beta.jar` in the `plugins` folder.
 - Start the server.
 - Confirm SmartAdmin enables without startup errors.
 - Confirm `plugins/SmartAdmin/config.yml` is generated.
@@ -16,6 +16,8 @@ Use this checklist on a local or staging Paper/Spigot server before publishing a
 - Run `/sa help`.
 - Run `/sa version`.
 - Run `/sa alerts` twice and confirm it toggles.
+- Run `/sa note <player> reviewed during test` and confirm the note appears in `/sa timeline <player>`.
+- Run `/sa reset <player>` and confirm the risk score resets to `0`.
 - Run `/sa reload`.
 
 ## Player Investigation

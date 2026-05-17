@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "cz.betminekdev"
-version = "0.1.0-beta"
+version = "0.1.1-beta"
 
 java {
     toolchain {
@@ -37,4 +37,3 @@ tasks.test {
     dependsOn(smartAdminSelfTest)
     exclude("**/*")
 }
-

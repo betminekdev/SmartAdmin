@@ -1,4 +1,4 @@
-# SmartAdmin v0.1.0-beta
+# SmartAdmin v0.1.1-beta
 
 SmartAdmin is a smart staff assistant for Minecraft servers.
 
@@ -12,13 +12,23 @@ It is not a classic anti-cheat. It does not auto-ban players and does not claim 
 - Suspicious mining signals for valuable ores and ore bursts.
 - Staff alerts with cooldowns.
 - In-memory watch mode.
+- Risk reset command for reviewed player profiles.
+- Staff notes in player timelines.
 - SQLite storage.
-- Configurable thresholds and risk decay.
+- Configurable thresholds, note length, and risk decay.
 - Commands under `/smartadmin`, with `/sa` and `/si` aliases.
+
+## New in v0.1.1-beta
+
+- Improved `/sa help` output.
+- Added `/sa reset <player>`.
+- Added `/sa note <player> <message>`.
+- Added `smartadmin.reset` and `smartadmin.note` permissions.
+- Added `notes.max-length` configuration.
 
 ## Installation
 
-1. Download `SmartAdmin-0.1.0-beta.jar`.
+1. Download `SmartAdmin-0.1.1-beta.jar`.
 2. Put it in your server `plugins` folder.
 3. Start your Paper/Spigot server.
 4. Confirm `plugins/SmartAdmin/config.yml` was created.
@@ -39,7 +49,7 @@ The mining detector is a simple configurable heuristic. Treat alerts as review s
 - No screenshot or device inspection.
 - Watch mode does not persist after restart.
 - Discord webhook settings are placeholders for a future release.
-- SQLite writes are simple and synchronous in v0.1.
+- SQLite is the only storage backend in v0.1.
 
 ## Marketplace Links
 

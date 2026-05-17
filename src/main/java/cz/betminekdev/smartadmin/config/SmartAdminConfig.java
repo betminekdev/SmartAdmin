@@ -43,6 +43,7 @@ public final class SmartAdminConfig {
     private final String databaseFile;
     private final int keepDataDays;
     private final boolean watchEnabled;
+    private final int noteMaxLength;
     private final boolean discordEnabled;
     private final String discordWebhookUrl;
     private final boolean discordHighRiskOnly;
@@ -81,6 +82,7 @@ public final class SmartAdminConfig {
         this.databaseFile = config.getString("storage.database-file", "plugins/SmartAdmin/smartadmin.db");
         this.keepDataDays = Math.max(1, config.getInt("storage.keep-data-days", 14));
         this.watchEnabled = config.getBoolean("watch.enabled", true);
+        this.noteMaxLength = Math.max(1, config.getInt("notes.max-length", 200));
         this.discordEnabled = config.getBoolean("discord.enabled", false);
         this.discordWebhookUrl = config.getString("discord.webhook-url", "");
         this.discordHighRiskOnly = config.getBoolean("discord.high-risk-only", true);
@@ -234,6 +236,10 @@ public final class SmartAdminConfig {
 
     public boolean watchEnabled() {
         return watchEnabled;
+    }
+
+    public int noteMaxLength() {
+        return noteMaxLength;
     }
 
     public boolean discordEnabled() {

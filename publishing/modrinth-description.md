@@ -28,7 +28,7 @@ Aliases: `/sa`, `/si`
 
 ## Beta Notice
 
-SmartAdmin `v0.1.0-beta` is an early beta. Test it on a staging server before production use and tune thresholds for your server.
+SmartAdmin `v0.1.1-beta` is an early beta. Test it on a staging server before production use and tune thresholds for your server.
 
 ## Links
 

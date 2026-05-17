@@ -7,5 +7,7 @@ public enum TimelineEventType {
     NEW_PLAYER_MINING,
     BLOCK_PLACE,
     CHAT_SIGNAL,
-    RISK_LEVEL_CHANGED
+    RISK_LEVEL_CHANGED,
+    STAFF_ACTION,
+    STAFF_NOTE
 }

@@ -69,8 +69,17 @@ storage:
   keep-data-days: 14
 ```
 
-Only SQLite is supported in `v0.1.0-beta`. Timeline cleanup uses `keep-data-days`.
+Only SQLite is supported in `v0.1.1-beta`. Timeline cleanup uses `keep-data-days`.
+
+## Notes
+
+```yaml
+notes:
+  max-length: 200
+```
+
+`notes.max-length` controls the maximum length of `/sa note <player> <message>`.
 
 ## Discord
 
-Discord settings are present for future releases. Webhook sending is not implemented in `v0.1.0-beta`.
+Discord settings are present for future releases. Webhook sending is not implemented in `v0.1.1-beta`.

@@ -1,5 +1,5 @@
 name: SmartAdmin
-version: 0.1.0-beta
+version: 0.1.1-beta
 main: cz.betminekdev.smartadmin.SmartAdminPlugin
 api-version: "1.21"
 author: BetminekDev
@@ -27,7 +27,12 @@ permissions:
   smartadmin.alerts:
     description: Can receive SmartAdmin staff alerts.
     default: op
+  smartadmin.reset:
+    description: Can reset a player's SmartAdmin risk score.
+    default: op
+  smartadmin.note:
+    description: Can add staff notes to a player's SmartAdmin timeline.
+    default: op
   smartadmin.bypass:
     description: Excludes a player from risk scoring unless configured otherwise.
     default: false
-

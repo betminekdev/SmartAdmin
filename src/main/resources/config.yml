@@ -58,8 +58,10 @@ storage:
 watch:
   enabled: true
 
+notes:
+  max-length: 200
+
 discord:
   enabled: false
   webhook-url: ""
   high-risk-only: true
-

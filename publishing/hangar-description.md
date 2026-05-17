@@ -12,7 +12,7 @@ SmartAdmin is not a classic anti-cheat. It does not auto-ban players, does not i
 
 It provides server-side signals and investigation data so staff can review behavior faster.
 
-## Included in v0.1.0-beta
+## Included in v0.1.1-beta
 
 - Player risk score
 - Risk levels
@@ -21,6 +21,8 @@ It provides server-side signals and investigation data so staff can review behav
 - High-value ore burst detection
 - Staff alerts
 - Watch mode
+- Risk reset command
+- Staff notes
 - SQLite storage
 - Configurable thresholds
 
