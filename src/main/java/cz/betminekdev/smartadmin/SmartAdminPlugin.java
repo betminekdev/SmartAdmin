@@ -35,7 +35,7 @@ public final class SmartAdminPlugin extends JavaPlugin {
         loadSmartAdminConfig();
 
         if (!"sqlite".equals(smartAdminConfig.storageType().toLowerCase(Locale.ROOT))) {
-            getLogger().warning("Only SQLite storage is supported in v0.1. Falling back to SQLite.");
+            getLogger().warning("Only SQLite storage is supported in v0.2. Falling back to SQLite.");
         }
 
         storageService = new SQLiteStorageService(new File(smartAdminConfig.databaseFile()));
@@ -51,6 +51,7 @@ public final class SmartAdminPlugin extends JavaPlugin {
         timelineService = new TimelineService(storageService);
         watchService = new WatchService(this::config);
         alertService = new AlertService(this, storageService, this::config);
+        alertService.warnIfDiscordMisconfigured();
         riskService = new RiskService(this, storageService, timelineService, alertService, watchService, this::config);
 
         registerListeners();
@@ -91,6 +92,9 @@ public final class SmartAdminPlugin extends JavaPlugin {
     private void reloadSmartAdmin() {
         loadSmartAdminConfig();
         restartDecayTask();
+        if (alertService != null) {
+            alertService.warnIfDiscordMisconfigured();
+        }
         getLogger().info("SmartAdmin configuration reloaded.");
     }
 
@@ -127,4 +131,3 @@ public final class SmartAdminPlugin extends JavaPlugin {
         decayTask = getServer().getScheduler().runTaskTimer(this, riskService::decayScores, intervalTicks, intervalTicks);
     }
 }
-

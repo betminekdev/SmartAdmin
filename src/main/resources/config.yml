@@ -61,7 +61,22 @@ watch:
 notes:
   max-length: 200
 
+evidence:
+  enabled: true
+  max-timeline-events: 15
+  include-recommendation: true
+
+export:
+  enabled: true
+  folder: "plugins/SmartAdmin/exports"
+  format: "txt"
+
+top:
+  default-limit: 10
+  max-limit: 25
+
 discord:
   enabled: false
   webhook-url: ""
   high-risk-only: true
+  send-evidence-summary: false

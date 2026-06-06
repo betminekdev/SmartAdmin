@@ -5,7 +5,7 @@ Use this checklist on a local or staging Paper/Spigot server before publishing a
 ## Fresh Startup
 
 - Stop the server.
-- Place `SmartAdmin-0.1.1-beta.jar` in the `plugins` folder.
+- Place `SmartAdmin-0.2.0-beta.jar` in the `plugins` folder.
 - Start the server.
 - Confirm SmartAdmin enables without startup errors.
 - Confirm `plugins/SmartAdmin/config.yml` is generated.
@@ -25,6 +25,10 @@ Use this checklist on a local or staging Paper/Spigot server before publishing a
 - Join with a test player.
 - Run `/sa profile <player>`.
 - Run `/sa timeline <player>`.
+- Run `/sa timeline <player> 5`.
+- Run `/sa evidence <player>`.
+- Run `/sa export <player>` and confirm a text file is created in `plugins/SmartAdmin/exports`.
+- Run `/sa top`.
 - Run `/sa watch <player>` as a staff member.
 - Perform important actions with the watched player and confirm watch messages appear.
 
@@ -42,6 +46,7 @@ Use this checklist on a local or staging Paper/Spigot server before publishing a
 - Raise a test player's risk past the configured alert threshold.
 - Confirm staff receive an alert.
 - Confirm repeated alerts respect the configured cooldown.
+- Leave Discord disabled and confirm no webhook errors are logged.
 
 ## Persistence
 

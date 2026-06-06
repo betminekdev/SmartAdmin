@@ -4,7 +4,7 @@
 
 **Stop guessing. Start investigating.**
 
-SmartAdmin helps staff teams review suspicious player behavior using risk scores, player timelines, staff alerts, and watch mode.
+SmartAdmin helps staff teams review suspicious player behavior using risk scores, player timelines, staff alerts, watch mode, staff notes, and evidence reports.
 
 > SmartAdmin is not a classic anti-cheat. It does not auto-ban players and does not claim perfect cheat detection. It provides server-side signals for manual staff review.
 
@@ -16,6 +16,10 @@ SmartAdmin helps staff teams review suspicious player behavior using risk scores
 - Suspicious mining signals and ore burst detection
 - Staff alerts with cooldowns
 - Watch mode for live investigation
+- Evidence reports and text exports
+- Top risk players command
+- Staff notes in timelines
+- Basic Discord webhook alerts
 - SQLite storage
 - Configurable thresholds and risk decay
 
@@ -26,9 +30,11 @@ Use `/sa` for daily staff work.
 Main command: `/smartadmin`  
 Aliases: `/sa`, `/si`
 
+Key commands include `/sa profile`, `/sa timeline`, `/sa evidence`, `/sa export`, `/sa top`, `/sa note`, and `/sa reset`.
+
 ## Beta Notice
 
-SmartAdmin `v0.1.1-beta` is an early beta. Test it on a staging server before production use and tune thresholds for your server.
+SmartAdmin `v0.2.0-beta` is an early beta. Test it on a staging server before production use and tune thresholds for your server.
 
 ## Links
 

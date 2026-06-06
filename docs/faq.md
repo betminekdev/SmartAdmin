@@ -6,7 +6,7 @@ No. SmartAdmin is a smart staff assistant. It provides investigation signals and
 
 ## Does SmartAdmin auto-ban players?
 
-No. SmartAdmin does not auto-ban in `v0.1.1-beta` and does not recommend punishing without review.
+No. SmartAdmin does not auto-ban in `v0.2.0-beta` and does not recommend punishing without review.
 
 ## Can it detect xray perfectly?
 
@@ -28,10 +28,18 @@ Use Java 21 for Paper 1.21.x servers.
 
 SQLite. The default file is `plugins/SmartAdmin/smartadmin.db`.
 
+## Does Discord webhook support replace staff review?
+
+No. Discord webhooks only mirror high-level alert information. They do not contain proof and should not trigger automatic punishment.
+
+## Where are exported reports saved?
+
+By default, `/sa export <player>` writes text reports to `plugins/SmartAdmin/exports`.
+
 ## Which command should staff use?
 
 Use `/sa` for daily staff work. The full command is `/smartadmin`, and `/si` is also registered as an alias.
 
-## Is v0.1.1-beta production ready?
+## Is v0.2.0-beta production ready?
 
 It is a public beta. Test it on a staging server first, tune thresholds, and review staff workflows before using it on a live server.

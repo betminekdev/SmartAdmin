@@ -1,4 +1,4 @@
-# SmartAdmin v0.1.1-beta
+# SmartAdmin v0.2.0-beta - Investigation Update
 
 SmartAdmin is a smart staff assistant for Minecraft servers.
 
@@ -12,23 +12,29 @@ It is not a classic anti-cheat. It does not auto-ban players and does not claim 
 - Suspicious mining signals for valuable ores and ore bursts.
 - Staff alerts with cooldowns.
 - In-memory watch mode.
-- Risk reset command for reviewed player profiles.
 - Staff notes in player timelines.
+- Evidence report command.
+- Evidence text export command.
+- Top risk players command.
+- Basic Discord webhook alerts.
 - SQLite storage.
-- Configurable thresholds, note length, and risk decay.
+- Configurable thresholds, note length, evidence limits, export folder, top limits, and risk decay.
 - Commands under `/smartadmin`, with `/sa` and `/si` aliases.
 
-## New in v0.1.1-beta
+## New in v0.2.0-beta
 
-- Improved `/sa help` output.
-- Added `/sa reset <player>`.
-- Added `/sa note <player> <message>`.
-- Added `smartadmin.reset` and `smartadmin.note` permissions.
-- Added `notes.max-length` configuration.
+- Added `/sa evidence <player>`.
+- Added `/sa export <player>`.
+- Added `/sa top [limit]`.
+- Added `/sa timeline <player> [limit]`.
+- Improved `/sa profile <player>`.
+- Improved `/sa help`.
+- Added basic async Discord webhook alerts.
+- Added `smartadmin.evidence`, `smartadmin.export`, and `smartadmin.top` permissions.
 
 ## Installation
 
-1. Download `SmartAdmin-0.1.1-beta.jar`.
+1. Download `SmartAdmin-0.2.0-beta.jar`.
 2. Put it in your server `plugins` folder.
 3. Start your Paper/Spigot server.
 4. Confirm `plugins/SmartAdmin/config.yml` was created.
@@ -39,7 +45,7 @@ It is not a classic anti-cheat. It does not auto-ban players and does not claim 
 
 This is a beta release. Test it on a staging server before using it on a live network.
 
-The mining detector is a simple configurable heuristic. Treat alerts as review signals, not proof.
+The mining detector is a configurable heuristic. Treat alerts and reports as review signals, not proof.
 
 ## Known Limitations
 
@@ -47,9 +53,10 @@ The mining detector is a simple configurable heuristic. Treat alerts as review s
 - No client-side detection.
 - No perfect xray detection.
 - No screenshot or device inspection.
+- No GUI yet.
+- No web dashboard yet.
 - Watch mode does not persist after restart.
-- Discord webhook settings are placeholders for a future release.
-- SQLite is the only storage backend in v0.1.
+- SQLite is the only storage backend in v0.2.
 
 ## Marketplace Links
 

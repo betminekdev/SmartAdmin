@@ -44,9 +44,18 @@ public final class SmartAdminConfig {
     private final int keepDataDays;
     private final boolean watchEnabled;
     private final int noteMaxLength;
+    private final boolean evidenceEnabled;
+    private final int evidenceMaxTimelineEvents;
+    private final boolean evidenceIncludeRecommendation;
+    private final boolean exportEnabled;
+    private final String exportFolder;
+    private final String exportFormat;
+    private final int topDefaultLimit;
+    private final int topMaxLimit;
     private final boolean discordEnabled;
     private final String discordWebhookUrl;
     private final boolean discordHighRiskOnly;
+    private final boolean discordSendEvidenceSummary;
 
     private SmartAdminConfig(FileConfiguration config) {
         this.prefix = config.getString("messages.prefix", "&8[&bSmartAdmin&8]&r ");
@@ -83,9 +92,18 @@ public final class SmartAdminConfig {
         this.keepDataDays = Math.max(1, config.getInt("storage.keep-data-days", 14));
         this.watchEnabled = config.getBoolean("watch.enabled", true);
         this.noteMaxLength = Math.max(1, config.getInt("notes.max-length", 200));
+        this.evidenceEnabled = config.getBoolean("evidence.enabled", true);
+        this.evidenceMaxTimelineEvents = Math.max(1, Math.min(30, config.getInt("evidence.max-timeline-events", 15)));
+        this.evidenceIncludeRecommendation = config.getBoolean("evidence.include-recommendation", true);
+        this.exportEnabled = config.getBoolean("export.enabled", true);
+        this.exportFolder = config.getString("export.folder", "plugins/SmartAdmin/exports");
+        this.exportFormat = config.getString("export.format", "txt");
+        this.topMaxLimit = Math.max(1, config.getInt("top.max-limit", 25));
+        this.topDefaultLimit = Math.max(1, Math.min(topMaxLimit, config.getInt("top.default-limit", 10)));
         this.discordEnabled = config.getBoolean("discord.enabled", false);
         this.discordWebhookUrl = config.getString("discord.webhook-url", "");
         this.discordHighRiskOnly = config.getBoolean("discord.high-risk-only", true);
+        this.discordSendEvidenceSummary = config.getBoolean("discord.send-evidence-summary", false);
     }
 
     public static SmartAdminConfig load(FileConfiguration config) {
@@ -242,6 +260,38 @@ public final class SmartAdminConfig {
         return noteMaxLength;
     }
 
+    public boolean evidenceEnabled() {
+        return evidenceEnabled;
+    }
+
+    public int evidenceMaxTimelineEvents() {
+        return evidenceMaxTimelineEvents;
+    }
+
+    public boolean evidenceIncludeRecommendation() {
+        return evidenceIncludeRecommendation;
+    }
+
+    public boolean exportEnabled() {
+        return exportEnabled;
+    }
+
+    public String exportFolder() {
+        return exportFolder;
+    }
+
+    public String exportFormat() {
+        return exportFormat;
+    }
+
+    public int topDefaultLimit() {
+        return topDefaultLimit;
+    }
+
+    public int topMaxLimit() {
+        return topMaxLimit;
+    }
+
     public boolean discordEnabled() {
         return discordEnabled;
     }
@@ -252,5 +302,9 @@ public final class SmartAdminConfig {
 
     public boolean discordHighRiskOnly() {
         return discordHighRiskOnly;
+    }
+
+    public boolean discordSendEvidenceSummary() {
+        return discordSendEvidenceSummary;
     }
 }

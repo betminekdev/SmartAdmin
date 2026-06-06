@@ -1,5 +1,5 @@
 name: SmartAdmin
-version: 0.1.1-beta
+version: 0.2.0-beta
 main: cz.betminekdev.smartadmin.SmartAdminPlugin
 api-version: "1.21"
 author: BetminekDev
@@ -32,6 +32,15 @@ permissions:
     default: op
   smartadmin.note:
     description: Can add staff notes to a player's SmartAdmin timeline.
+    default: op
+  smartadmin.evidence:
+    description: Can view SmartAdmin evidence reports.
+    default: op
+  smartadmin.export:
+    description: Can export SmartAdmin evidence reports.
+    default: op
+  smartadmin.top:
+    description: Can view top risk players.
     default: op
   smartadmin.bypass:
     description: Excludes a player from risk scoring unless configured otherwise.

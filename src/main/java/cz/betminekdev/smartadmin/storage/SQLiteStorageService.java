@@ -175,6 +175,22 @@ public final class SQLiteStorageService implements StorageService {
     }
 
     @Override
+    public synchronized List<PlayerProfile> getTopRiskProfiles(int limit) throws SQLException {
+        ensureOpen();
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT * FROM players WHERE risk_score > 0 ORDER BY risk_score DESC, last_seen DESC LIMIT ?")) {
+            statement.setInt(1, Math.max(1, limit));
+            ArrayList<PlayerProfile> profiles = new ArrayList<>();
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    profiles.add(readProfile(resultSet));
+                }
+            }
+            return profiles;
+        }
+    }
+
+    @Override
     public synchronized int countTimelineEvents(UUID uuid, String eventType, String materialName, long sinceMillis) throws SQLException {
         ensureOpen();
         try (PreparedStatement statement = connection.prepareStatement(

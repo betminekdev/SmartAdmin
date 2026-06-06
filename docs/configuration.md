@@ -69,7 +69,7 @@ storage:
   keep-data-days: 14
 ```
 
-Only SQLite is supported in `v0.1.1-beta`. Timeline cleanup uses `keep-data-days`.
+Only SQLite is supported in `v0.2.0-beta`. Timeline cleanup uses `keep-data-days`.
 
 ## Notes
 
@@ -80,6 +80,46 @@ notes:
 
 `notes.max-length` controls the maximum length of `/sa note <player> <message>`.
 
+## Evidence
+
+```yaml
+evidence:
+  enabled: true
+  max-timeline-events: 15
+  include-recommendation: true
+```
+
+`evidence.max-timeline-events` controls how many recent events evidence reports include.
+
+## Export
+
+```yaml
+export:
+  enabled: true
+  folder: "plugins/SmartAdmin/exports"
+  format: "txt"
+```
+
+Evidence exports are written as text reports. Do not use exports as automatic punishment proof.
+
+## Top Risk
+
+```yaml
+top:
+  default-limit: 10
+  max-limit: 25
+```
+
+These values control `/sa top` and `/sa top <limit>`.
+
 ## Discord
 
-Discord settings are present for future releases. Webhook sending is not implemented in `v0.1.1-beta`.
+```yaml
+discord:
+  enabled: false
+  webhook-url: ""
+  high-risk-only: true
+  send-evidence-summary: false
+```
+
+Discord webhook alerts are disabled by default. When enabled, SmartAdmin sends simple alert messages asynchronously after the normal staff alert threshold and cooldown checks pass.

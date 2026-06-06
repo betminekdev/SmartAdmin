@@ -26,6 +26,8 @@ public interface StorageService extends AutoCloseable {
 
     List<TimelineEvent> getRecentRiskSignals(UUID uuid, int limit) throws SQLException;
 
+    List<PlayerProfile> getTopRiskProfiles(int limit) throws SQLException;
+
     int countTimelineEvents(UUID uuid, String eventType, String materialName, long sinceMillis) throws SQLException;
 
     int decayRiskScores(int amount) throws SQLException;

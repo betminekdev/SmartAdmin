@@ -5,16 +5,16 @@
 [![Build](https://github.com/betminekdev/SmartAdmin/actions/workflows/build.yml/badge.svg)](https://github.com/betminekdev/SmartAdmin/actions/workflows/build.yml)
 ![Java 21](https://img.shields.io/badge/Java-21-blue)
 ![Paper/Spigot](https://img.shields.io/badge/Paper%2FSpigot-1.21.x-38bdf8)
-![Version](https://img.shields.io/badge/version-0.1.1--beta-f59e0b)
+![Version](https://img.shields.io/badge/version-0.2.0--beta-f59e0b)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 Smart staff assistant for Minecraft servers.
 
 **Stop guessing. Start investigating.**
 
-SmartAdmin helps staff teams review suspicious player behavior with risk scores, player timelines, staff alerts, and watch mode.
+SmartAdmin helps staff teams review suspicious player behavior with risk scores, player timelines, staff alerts, watch mode, staff notes, and evidence reports.
 
-> **Beta warning:** SmartAdmin `v0.1.1-beta` is an early public beta. Test it on a staging server first and tune thresholds for your community.
+> **Beta warning:** SmartAdmin `v0.2.0-beta` is an early public beta. Test it on a staging server first and tune thresholds for your community.
 
 SmartAdmin is not a classic anti-cheat and does not replace human moderation. It provides server-side signals and timeline data for staff review. It does not auto-ban players and it does not claim guaranteed cheat detection.
 
@@ -26,6 +26,10 @@ SmartAdmin is not a classic anti-cheat and does not replace human moderation. It
 - Mining signals for valuable ores and ore bursts
 - Staff alerts with cooldowns
 - In-memory watch mode for live investigation
+- Evidence report and text export commands
+- Top risk players command
+- Staff notes in player timelines
+- Basic Discord webhook alerts
 - SQLite storage
 - Configurable risk values, thresholds, and decay
 - Permission-based command access
@@ -42,7 +46,7 @@ SmartAdmin is not a classic anti-cheat and does not replace human moderation. It
 
 ## Installation
 
-1. Download `SmartAdmin-0.1.1-beta.jar` from the GitHub release.
+1. Download `SmartAdmin-0.2.0-beta.jar` from the GitHub release.
 2. Stop your server.
 3. Place the JAR in the server `plugins` folder.
 4. Start the server.
@@ -60,14 +64,16 @@ Additional alias: `/si`
 | --- | --- |
 | `/sa help` | Shows SmartAdmin commands. |
 | `/sa profile <player>` | Shows risk score, status, and recent signals. |
-| `/sa timeline <player>` | Shows recent timeline events. |
+| `/sa timeline <player> [limit]` | Shows recent timeline events. |
+| `/sa evidence <player>` | Shows a readable investigation summary. |
+| `/sa export <player>` | Exports an evidence report to a text file. |
+| `/sa top [limit]` | Shows highest risk players. |
 | `/sa watch <player>` | Toggles live watch mode for the sender. |
 | `/sa alerts` | Toggles personal staff alerts. |
 | `/sa reset <player>` | Resets a player's risk score to `0` and records a staff action. |
 | `/sa note <player> <message>` | Adds a staff note to the player's timeline. |
 | `/sa reload` | Reloads configuration. |
 | `/sa version` | Shows plugin version. |
-| `/sa evidence <player>` | Placeholder for future investigation reports. |
 
 See [docs/commands.md](docs/commands.md) for details.
 
@@ -76,11 +82,14 @@ See [docs/commands.md](docs/commands.md) for details.
 | Permission | Default | Purpose |
 | --- | --- | --- |
 | `smartadmin.admin` | `op` | Full access to SmartAdmin. |
-| `smartadmin.staff` | `op` | Access to profile, timeline, watch, alerts, help, version, and evidence placeholder. |
+| `smartadmin.staff` | `op` | Access to staff investigation basics. |
 | `smartadmin.reload` | `op` | Access to `/sa reload`. |
 | `smartadmin.alerts` | `op` | Allows receiving SmartAdmin alerts. |
 | `smartadmin.reset` | `op` | Allows resetting player risk scores. |
 | `smartadmin.note` | `op` | Allows adding staff notes to player timelines. |
+| `smartadmin.evidence` | `op` | Allows viewing evidence reports. |
+| `smartadmin.export` | `op` | Allows exporting evidence reports. |
+| `smartadmin.top` | `op` | Allows viewing top risk players. |
 | `smartadmin.bypass` | `false` | Excludes a player from risk scoring unless configured otherwise. |
 
 See [docs/permissions.md](docs/permissions.md) for setup guidance.
@@ -115,6 +124,20 @@ alerts:
 
 notes:
   max-length: 200
+
+evidence:
+  enabled: true
+  max-timeline-events: 15
+  include-recommendation: true
+
+export:
+  enabled: true
+  folder: "plugins/SmartAdmin/exports"
+  format: "txt"
+
+top:
+  default-limit: 10
+  max-limit: 25
 ```
 
 See [docs/configuration.md](docs/configuration.md) before tuning thresholds.
@@ -153,7 +176,8 @@ Actions: /sa profile PlayerName | /sa timeline PlayerName | /sa watch PlayerName
 - SmartAdmin does not auto-punish players.
 - Risk scores are investigation signals, not proof.
 - Watch mode is in-memory and resets on restart.
-- SQLite storage is the only storage backend in `v0.1.1-beta`.
+- SQLite storage is the only storage backend in `v0.2.0-beta`.
+- Discord webhook alerts are intentionally simple and alert-focused.
 
 See [docs/detection.md](docs/detection.md) for detection philosophy.
 
@@ -174,13 +198,11 @@ Linux/macOS:
 The JAR is created at:
 
 ```text
-build/libs/SmartAdmin-0.1.1-beta.jar
+build/libs/SmartAdmin-0.2.0-beta.jar
 ```
 
 ## Roadmap
 
-- Discord webhook alerts
-- Evidence report generation
 - Inventory GUI
 - Web dashboard
 - More detectors

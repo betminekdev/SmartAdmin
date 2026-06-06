@@ -10,6 +10,7 @@ It collects server-side signals, creates timelines, calculates risk scores, and 
 - Adds risk points for configured signals.
 - Stores timeline events for investigation.
 - Alerts staff when risk passes configured thresholds.
+- Generates evidence summaries and text exports for staff review.
 - Helps staff decide what to review next.
 
 ## What SmartAdmin Does Not Do
@@ -19,6 +20,7 @@ It collects server-side signals, creates timelines, calculates risk scores, and 
 - It does not inspect screenshots or player devices.
 - It does not auto-ban players.
 - It does not prove xray by itself.
+- It does not make exported reports proof of cheating.
 
 ## Mining Signals
 
