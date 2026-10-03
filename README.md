@@ -5,7 +5,7 @@
 [![Build](https://github.com/betminekdev/SmartAdmin/actions/workflows/build.yml/badge.svg)](https://github.com/betminekdev/SmartAdmin/actions/workflows/build.yml)
 ![Java 21](https://img.shields.io/badge/Java-21-blue)
 ![Paper/Spigot](https://img.shields.io/badge/Paper%2FSpigot-1.21.x-38bdf8)
-![Version](https://img.shields.io/badge/version-0.3.0--beta-f59e0b)
+![Version](https://img.shields.io/badge/version-0.4.0--beta-f59e0b)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 Smart staff assistant for Minecraft servers.
@@ -14,7 +14,7 @@ Smart staff assistant for Minecraft servers.
 
 SmartAdmin helps staff teams review suspicious player behavior with risk scores, player timelines, staff alerts, watch mode, staff notes, and evidence reports.
 
-> **Beta warning:** SmartAdmin `v0.3.0-beta` is a beta candidate. Test it on a staging server first and tune thresholds for your community.
+> **Beta warning:** SmartAdmin `v0.4.0-beta` requires staging-server testing before production use. Automated checks are not a substitute for multiplayer testing. Tune thresholds for your community.
 
 SmartAdmin is not a classic anti-cheat and does not replace human moderation. It provides server-side signals and timeline data for staff review. It does not auto-ban players and it does not claim guaranteed cheat detection.
 
@@ -46,13 +46,19 @@ SmartAdmin is not a classic anti-cheat and does not replace human moderation. It
 
 ## Installation
 
-1. Obtain `SmartAdmin-0.3.0-beta.jar` from a matching GitHub release, or build it from this checkout using the instructions below.
+1. Download `SmartAdmin-0.4.0-beta.jar` from the [matching release](https://github.com/betminekdev/SmartAdmin/releases/tag/v0.4.0-beta), or build this checkout using the instructions below.
 2. Stop your server.
 3. Place the JAR in the server `plugins` folder.
 4. Start the server.
 5. Confirm `plugins/SmartAdmin/config.yml` and `plugins/SmartAdmin/smartadmin.db` were created.
 6. Edit `plugins/SmartAdmin/config.yml` if needed.
 7. Run `/sa reload` after safe config changes, or restart after changing storage settings.
+
+## Upgrading from 0.3
+
+Back up `plugins/SmartAdmin`, stop the server, and replace the old JAR. Keep your existing config and database. This update does not change detector behavior, risk calculations, or the database schema.
+
+Use `/sa timeline <player> 10 2` to browse older events and `/sa watch list` or `/sa watch clear` to manage your watches. Profile reasons are historical signals, not a breakdown of the current score. The watch arguments `list` and `clear` are reserved; use a player's UUID if their name matches either word.
 
 ## Upgrading from 0.2
 
@@ -78,11 +84,13 @@ Additional alias: `/si`
 | --- | --- |
 | `/sa help` | Shows SmartAdmin commands. |
 | `/sa profile <player>` | Shows risk score, status, and recent signals. |
-| `/sa timeline <player> [limit]` | Shows recent timeline events. |
+| `/sa timeline <player> [limit] [page]` | Browses dated timeline events with older/newer hints. |
 | `/sa evidence <player>` | Shows a readable investigation summary. |
 | `/sa export <player>` | Exports an evidence report to a text file. |
 | `/sa top [limit]` | Shows highest risk players. |
 | `/sa watch <player>` | Toggles live watch mode for the sender. |
+| `/sa watch list` | Lists your watched players. |
+| `/sa watch clear` | Clears only your watches. |
 | `/sa alerts` | Toggles personal staff alerts. |
 | `/sa reset <player>` | Resets a player's risk score to `0` and records a staff action. |
 | `/sa note <player> <message>` | Adds a staff note to the player's timeline. |
@@ -214,7 +222,7 @@ Linux/macOS:
 The JAR is created at:
 
 ```text
-build/libs/SmartAdmin-0.3.0-beta.jar
+build/libs/SmartAdmin-0.4.0-beta.jar
 ```
 
 ## Roadmap
@@ -235,7 +243,7 @@ build/libs/SmartAdmin-0.3.0-beta.jar
 - GitHub: https://github.com/betminekdev/SmartAdmin
 - Modrinth: _coming soon_
 - Hangar: _coming soon_
-- SpigotMC: _coming soon_
+- SpigotMC: https://www.spigotmc.org/resources/smartadmin-smart-staff-assistant.135328/
 
 ## License
 

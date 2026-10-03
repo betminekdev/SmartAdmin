@@ -8,11 +8,13 @@ Aliases: `/sa`, `/si`
 | --- | --- | --- |
 | `/sa help` | Any SmartAdmin command permission | Show commands available to the sender. |
 | `/sa profile <player>` | `smartadmin.staff` or `smartadmin.admin` | Review risk score, risk level, last seen time, and recent signals. |
-| `/sa timeline <player> [limit]` | `smartadmin.staff` or `smartadmin.admin` | Review recent important events for a player. |
+| `/sa timeline <player> [limit] [page]` | `smartadmin.staff` or `smartadmin.admin` | Browse important events for a player. |
 | `/sa evidence <player>` | `smartadmin.evidence` or `smartadmin.admin` | Show an investigation summary. |
 | `/sa export <player>` | `smartadmin.export` or `smartadmin.admin` | Export an evidence report to a text file. |
 | `/sa top [limit]` | `smartadmin.top` or `smartadmin.admin` | Show highest risk players. |
 | `/sa watch <player>` | `smartadmin.staff` or `smartadmin.admin` | Toggle live watch messages for one player. |
+| `/sa watch list` | `smartadmin.staff` or `smartadmin.admin` | List your watched players. Players only. |
+| `/sa watch clear` | `smartadmin.staff` or `smartadmin.admin` | Clear your watches without affecting other staff. Players only. |
 | `/sa alerts` | `smartadmin.alerts`, `smartadmin.staff`, or `smartadmin.admin` | Toggle personal alert delivery. |
 | `/sa reset <player>` | `smartadmin.reset` or `smartadmin.admin` | Reset a player's risk score to `0` and add a staff action timeline event. |
 | `/sa note <player> <message>` | `smartadmin.note` or `smartadmin.admin` | Add a staff note to the player's timeline without changing risk. |
@@ -23,9 +25,11 @@ Aliases: `/sa`, `/si`
 
 Player arguments accept a known name or UUID, including stored offline profiles. Unknown names do not trigger an external lookup. Help and tab completion are permission-aware.
 
-Use `/sa profile <player>` for a quick summary before taking action.
+Use `/sa profile <player>` for a quick summary before taking action. It includes the three latest retained positive-risk signals with dates. These are historical events, not a breakdown of the current score: decay or a staff reset may have reduced it since.
 
-Use `/sa timeline <player> [limit]` when staff need context around the score. Timeline entries can include joins, ore mining, ore burst signals, block placement signals, chat signals, staff notes, and risk level changes. The optional limit is clamped to a safe range.
+Use `/sa timeline <player> [limit] [page]` when staff need context around the score. Timeline entries can include joins, ore mining, ore burst signals, block placement signals, chat signals, staff notes, and risk level changes. The default limit is 10, capped at 30; page defaults to 1 and must be between 1 and 1000. Existing commands without a page still work.
+
+Page 1 contains the newest events. `/sa timeline PlayerName 10 2` shows the next ten older events; entries within each page appear oldest first. Navigation hints use the player's UUID to avoid name ambiguity. Full dates distinguish events across days. Pages are live, not a frozen snapshot: new events or retention cleanup can shift page boundaries. Export a report when you need to preserve the currently displayed investigation context.
 
 Use `/sa evidence <player>` to show a compact investigation summary with risk, suspicious signals, recent timeline events, and a manual review recommendation.
 
@@ -36,6 +40,8 @@ Export confirms when its asynchronous file write completes. Reports never overwr
 Use `/sa top [limit]` to list the highest risk known players. Players with `0` risk are ignored.
 
 Use `/sa watch <player>` during manual investigation. Watch mode resets on staff logout or server restart. Delivery requires current staff/admin permission.
+
+Use `/sa watch list` to see your targets and `/sa watch clear` to stop all your watches. Listing and clearing still work when watch delivery is disabled in config. The words `list` and `clear` are reserved here; use a known player's UUID if their name matches either word.
 
 Use `/sa reset <player>` when a reviewed score should be cleared. The command works for known player profiles, including known offline players, and records the reset in the timeline.
 

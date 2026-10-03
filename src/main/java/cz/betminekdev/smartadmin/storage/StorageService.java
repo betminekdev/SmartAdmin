@@ -33,6 +33,8 @@ public interface StorageService extends AutoCloseable {
 
     List<TimelineEvent> getRecentTimeline(UUID uuid, int limit) throws SQLException;
 
+    List<TimelineEvent> getTimelinePage(UUID uuid, int limit, int page) throws SQLException;
+
     List<TimelineEvent> getRecentRiskSignals(UUID uuid, int limit) throws SQLException;
 
     List<PlayerProfile> getTopRiskProfiles(int limit) throws SQLException;

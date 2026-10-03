@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
     private static final int DEFAULT_TIMELINE_LIMIT = 10;
     private static final int MAX_TIMELINE_LIMIT = 30;
+    private static final int MAX_TIMELINE_PAGE = 1000;
 
     private final JavaPlugin plugin;
     private final StorageService storage;
@@ -90,11 +91,12 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(MessageUtil.color("&8&m-----------------------------------------------------"));
         sender.sendMessage(MessageUtil.color("&7Commands:"));
         helpLine(sender, "profile", "<player>", "show player profile");
-        helpLine(sender, "timeline", "<player> [limit]", "show recent events");
+        helpLine(sender, "timeline", "<player> [limit] [page]", "browse events, newest page first");
         helpLine(sender, "evidence", "<player>", "show investigation summary");
         helpLine(sender, "export", "<player>", "export evidence report");
         helpLine(sender, "top", "[limit]", "show highest risk players");
         helpLine(sender, "watch", "<player>", "toggle watch mode");
+        helpLine(sender, "watch", "list|clear", "list or clear your watches");
         helpLine(sender, "alerts", "", "toggle personal alerts");
         helpLine(sender, "note", "<player> <message>", "add staff note");
         helpLine(sender, "reset", "<player>", "reset risk score");
@@ -135,8 +137,14 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(MessageUtil.color("&7First Seen: &f" + TimeUtil.dateTime(profile.firstSeen())));
         sender.sendMessage(MessageUtil.color("&7Last Seen: &f" + TimeUtil.dateTime(profile.lastSeen())));
         try {
-            int signalCount = timelineService.recentRiskSignals(profile.uuid(), 10).size();
-            sender.sendMessage(MessageUtil.color("&7Latest positive-risk signals (up to 10): &f" + signalCount));
+            List<TimelineEvent> signals = timelineService.recentRiskSignals(profile.uuid(), 3);
+            sender.sendMessage(MessageUtil.color("&7Recent positive-risk signals (historical, not a score breakdown):"));
+            if (signals.isEmpty()) {
+                sender.sendMessage(MessageUtil.color("&8- &7No positive-risk signals stored."));
+            }
+            for (TimelineEvent signal : signals) {
+                sender.sendMessage(MessageUtil.color(formatTimeline(signal)));
+            }
         } catch (SQLException exception) {
             sender.sendMessage(MessageUtil.color("&7Recent important signals: &cCould not load"));
             plugin.getLogger().warning("Could not load profile signal count: " + exception.getMessage());
@@ -152,7 +160,7 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length < 2) {
-            MessageUtil.send(sender, config.get().prefix(), "&cUsage: /sa timeline <player> [limit]");
+            MessageUtil.send(sender, config.get().prefix(), "&cUsage: /sa timeline <player> [limit] [page]");
             return true;
         }
         int limit = DEFAULT_TIMELINE_LIMIT;
@@ -165,6 +173,16 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             limit = Math.max(1, Math.min(MAX_TIMELINE_LIMIT, parsedLimit.get()));
         }
 
+        int page = 1;
+        if (args.length >= 4) {
+            Optional<Integer> parsedPage = parsePositiveInt(args[3]);
+            if (parsedPage.isEmpty() || parsedPage.get() > MAX_TIMELINE_PAGE) {
+                MessageUtil.send(sender, config.get().prefix(), "&cTimeline page must be a number from 1 to " + MAX_TIMELINE_PAGE + ".");
+                return true;
+            }
+            page = parsedPage.get();
+        }
+
         Optional<PlayerProfile> optionalProfile = findProfile(args[1]);
         if (optionalProfile.isEmpty()) {
             playerNotFound(sender);
@@ -172,16 +190,26 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         }
 
         PlayerProfile profile = optionalProfile.get();
-        MessageUtil.send(sender, config.get().prefix(), "&bTimeline: &f" + profile.name() + " &7(" + limit + " events)");
+        MessageUtil.send(sender, config.get().prefix(), "&bTimeline: &f" + profile.name() + " &7(page " + page + ", up to " + limit + " events)");
         try {
-            List<TimelineEvent> events = new ArrayList<>(timelineService.recent(profile.uuid(), limit));
+            List<TimelineEvent> events = new ArrayList<>(storage.getTimelinePage(profile.uuid(), limit, page));
+            boolean hasOlder = events.size() > limit;
+            if (hasOlder) {
+                events.removeLast();
+            }
             Collections.reverse(events);
             if (events.isEmpty()) {
-                sender.sendMessage(MessageUtil.color("&8- &7No timeline events stored yet."));
-                return true;
+                sender.sendMessage(MessageUtil.color("&8- &7No events on this page. Try page 1 for the latest events."));
             }
             for (TimelineEvent event : events) {
                 sender.sendMessage(MessageUtil.color(formatTimeline(event)));
+            }
+            String navigation = "/sa timeline " + profile.uuid() + " " + limit + " ";
+            if (page > 1) {
+                sender.sendMessage(MessageUtil.color("&7Newer: &b" + navigation + (page - 1)));
+            }
+            if (hasOlder && page < MAX_TIMELINE_PAGE) {
+                sender.sendMessage(MessageUtil.color("&7Older: &b" + navigation + (page + 1)));
             }
         } catch (SQLException exception) {
             MessageUtil.send(sender, config.get().prefix(), "&cCould not load timeline.");
@@ -321,12 +349,38 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             MessageUtil.send(sender, config.get().prefix(), "&cOnly players can use watch mode.");
             return true;
         }
-        if (!config.get().watchEnabled()) {
-            MessageUtil.send(sender, config.get().prefix(), "&cWatch mode is disabled in config.");
+        if (args.length < 2) {
+            MessageUtil.send(sender, config.get().prefix(), "&cUsage: /sa watch <player>|list|clear");
             return true;
         }
-        if (args.length < 2) {
-            MessageUtil.send(sender, config.get().prefix(), "&cUsage: /sa watch <player>");
+        if (args[1].equalsIgnoreCase("clear")) {
+            int removed = watchService.clear(staff.getUniqueId());
+            MessageUtil.send(sender, config.get().prefix(), "&aCleared " + removed + " watched player(s). Other staff watches are unchanged.");
+            return true;
+        }
+        if (args[1].equalsIgnoreCase("list")) {
+            try {
+                List<String> watched = new ArrayList<>();
+                for (UUID uuid : watchService.watchedPlayers(staff.getUniqueId())) {
+                    watched.add(storage.findProfile(uuid).map(PlayerProfile::name).orElse(uuid.toString()));
+                }
+                watched.sort(String.CASE_INSENSITIVE_ORDER);
+                MessageUtil.send(sender, config.get().prefix(), "&bYour watches: &f" + watched.size()
+                        + (config.get().watchEnabled() ? "" : " &7(delivery disabled in config)"));
+                if (watched.isEmpty()) {
+                    sender.sendMessage(MessageUtil.color("&7No players watched. Use /sa watch <player>."));
+                }
+                for (String name : watched) {
+                    sender.sendMessage(MessageUtil.color("&8- &f" + name));
+                }
+            } catch (SQLException exception) {
+                MessageUtil.send(sender, config.get().prefix(), "&cCould not load watched player names.");
+                plugin.getLogger().warning("Could not load watch list: " + exception.getMessage());
+            }
+            return true;
+        }
+        if (!config.get().watchEnabled()) {
+            MessageUtil.send(sender, config.get().prefix(), "&cWatch mode is disabled in config.");
             return true;
         }
         Optional<PlayerProfile> optionalProfile = findProfile(args[1]);
@@ -568,7 +622,7 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
 
     private String formatTimeline(TimelineEvent event) {
         StringBuilder line = new StringBuilder("&8[&7")
-                .append(TimeUtil.time(event.timestamp()))
+                .append(TimeUtil.dateTime(event.timestamp()))
                 .append("&8] &f")
                 .append(event.reason());
         if (event.world() != null && event.x() != null && event.y() != null && event.z() != null) {
@@ -588,7 +642,7 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
 
     private String formatPlainTimeline(TimelineEvent event) {
         StringBuilder line = new StringBuilder("[")
-                .append(TimeUtil.time(event.timestamp()))
+                .append(TimeUtil.dateTime(event.timestamp()))
                 .append("] ")
                 .append(event.reason());
         if (event.world() != null && event.x() != null && event.y() != null && event.z() != null) {
@@ -658,9 +712,14 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 2 && canUse(sender, args[0].toLowerCase(Locale.ROOT))
                 && List.of("profile", "timeline", "watch", "evidence", "export", "reset", "note").contains(args[0].toLowerCase(Locale.ROOT))) {
-            return Bukkit.getOnlinePlayers().stream()
-                    .map(Player::getName)
+            List<String> targets = new ArrayList<>();
+            Bukkit.getOnlinePlayers().forEach(player -> targets.add(player.getName()));
+            if (args[0].equalsIgnoreCase("watch")) {
+                targets.addAll(List.of("list", "clear"));
+            }
+            return targets.stream()
                     .filter(name -> name.toLowerCase(Locale.ROOT).startsWith(args[1].toLowerCase(Locale.ROOT)))
+                    .distinct()
                     .sorted(String.CASE_INSENSITIVE_ORDER)
                     .toList();
         }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0-beta - Staff Workflow Update
+
+- Added bounded timeline pagination: `/sa timeline <player> [limit] [page]`, with older/newer navigation hints.
+- Timeline and exported events show full dates to distinguish investigations spanning several days.
+- Added `/sa watch list` and `/sa watch clear`, scoped to the current staff member and usable while delivery is disabled.
+- Profiles show the latest three retained positive-risk reasons instead of only a count, explicitly labelled historical.
+- Added SQLite pagination and watch workflow regression tests. No detector, scoring, or database schema changes.
+
 ## 0.3.0-beta - Reliability Update
 
 - Risk updates and timeline events now commit in one SQLite transaction; resets preserve offline last-seen timestamps.

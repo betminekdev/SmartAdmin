@@ -59,8 +59,17 @@ public final class WatchService implements Listener {
         watchedByStaff.clear();
     }
 
+    public Set<UUID> watchedPlayers(UUID staffUuid) {
+        return Set.copyOf(watchedByStaff.getOrDefault(staffUuid, Set.of()));
+    }
+
+    public int clear(UUID staffUuid) {
+        Set<UUID> removed = watchedByStaff.remove(staffUuid);
+        return removed == null ? 0 : removed.size();
+    }
+
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        watchedByStaff.remove(event.getPlayer().getUniqueId());
+        clear(event.getPlayer().getUniqueId());
     }
 }

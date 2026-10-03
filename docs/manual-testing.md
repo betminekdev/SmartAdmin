@@ -5,7 +5,7 @@ Use this checklist on a local or staging Paper/Spigot server before publishing a
 ## Fresh Startup
 
 - Stop the server.
-- Place `SmartAdmin-0.3.0-beta.jar` in the `plugins` folder.
+- Place `SmartAdmin-0.4.0-beta.jar` in the `plugins` folder.
 - Start the server.
 - Confirm SmartAdmin enables without startup errors.
 - Confirm `plugins/SmartAdmin/config.yml` is generated.
@@ -26,11 +26,18 @@ Use this checklist on a local or staging Paper/Spigot server before publishing a
 - Run `/sa profile <player>`.
 - Run `/sa timeline <player>`.
 - Run `/sa timeline <player> 5`.
+- Generate more than ten events, then compare `/sa timeline <player> 5 1` and `/sa timeline <player> 5 2` while the target is idle. Confirm navigation and no overlap.
+- Check empty pages and invalid page values (`0`, `-1`, `1001`, `abc`). Confirm helpful errors without console exceptions.
+- Confirm timeline entries and exported events display dates, including older days.
+- Confirm `/sa profile <player>` shows up to three historical reasons; reset the score and verify old reasons are not presented as a current score breakdown.
 - Run `/sa evidence <player>`.
 - Run `/sa export <player>` and confirm a text file is created in `plugins/SmartAdmin/exports`.
 - Run `/sa top`.
 - Run `/sa watch <player>` as a staff member.
 - Perform important actions with the watched player and confirm watch messages appear.
+- Use two staff accounts to watch the player. Run `/sa watch list`, then `/sa watch clear` on one account. The other must still receive events.
+- Disable watch in config and reload. Listing and clearing should remain available, but live delivery must stop.
+- Check that non-staff cannot use watch list/clear, and console receives a player-only message.
 
 ## Mining Signals
 

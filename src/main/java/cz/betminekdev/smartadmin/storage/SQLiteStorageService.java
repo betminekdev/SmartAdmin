@@ -169,6 +169,22 @@ public final class SQLiteStorageService implements StorageService {
     }
 
     @Override
+    public synchronized List<TimelineEvent> getTimelinePage(UUID uuid, int limit, int page) throws SQLException {
+        ensureOpen();
+        if (limit < 1 || limit > 30 || page < 1 || page > 1000) {
+            throw new IllegalArgumentException("Timeline limit must be 1-30 and page must be 1-1000.");
+        }
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT * FROM timeline_events WHERE player_uuid = ? ORDER BY timestamp DESC, id DESC LIMIT ? OFFSET ?")) {
+            statement.setString(1, uuid.toString());
+            // One lookahead row lets the command offer a next page without a separate COUNT query.
+            statement.setInt(2, limit + 1);
+            statement.setInt(3, (page - 1) * limit);
+            return readEvents(statement);
+        }
+    }
+
+    @Override
     public synchronized List<TimelineEvent> getRecentRiskSignals(UUID uuid, int limit) throws SQLException {
         ensureOpen();
         try (PreparedStatement statement = connection.prepareStatement(

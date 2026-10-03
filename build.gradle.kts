@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "cz.betminekdev"
-version = "0.3.0-beta"
+version = "0.4.0-beta"
 
 java {
     toolchain {
