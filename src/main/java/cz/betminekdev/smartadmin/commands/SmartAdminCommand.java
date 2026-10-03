@@ -9,9 +9,9 @@ import cz.betminekdev.smartadmin.timeline.TimelineEventType;
 import cz.betminekdev.smartadmin.timeline.TimelineService;
 import cz.betminekdev.smartadmin.util.MessageUtil;
 import cz.betminekdev.smartadmin.util.TimeUtil;
+import cz.betminekdev.smartadmin.util.EvidenceFiles;
 import cz.betminekdev.smartadmin.watch.WatchService;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -20,13 +20,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.InvalidPathException;
 import java.sql.SQLException;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,12 +30,11 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
     private static final int DEFAULT_TIMELINE_LIMIT = 10;
     private static final int MAX_TIMELINE_LIMIT = 30;
-    private static final DateTimeFormatter EXPORT_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm")
-            .withZone(ZoneId.systemDefault());
 
     private final JavaPlugin plugin;
     private final StorageService storage;
@@ -47,6 +42,7 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
     private final WatchService watchService;
     private final Supplier<SmartAdminConfig> config;
     private final Runnable reloadAction;
+    private final AtomicInteger pendingExports = new AtomicInteger();
 
     public SmartAdminCommand(JavaPlugin plugin, StorageService storage, TimelineService timelineService,
                               WatchService watchService, Supplier<SmartAdminConfig> config, Runnable reloadAction) {
@@ -93,20 +89,27 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(MessageUtil.color("&7Smart staff assistant for Minecraft servers"));
         sender.sendMessage(MessageUtil.color("&8&m-----------------------------------------------------"));
         sender.sendMessage(MessageUtil.color("&7Commands:"));
-        sender.sendMessage(MessageUtil.color("&8- &b/sa profile <player> &7- show player profile"));
-        sender.sendMessage(MessageUtil.color("&8- &b/sa timeline <player> [limit] &7- show recent events"));
-        sender.sendMessage(MessageUtil.color("&8- &b/sa evidence <player> &7- show investigation summary"));
-        sender.sendMessage(MessageUtil.color("&8- &b/sa export <player> &7- export evidence report"));
-        sender.sendMessage(MessageUtil.color("&8- &b/sa top [limit] &7- show highest risk players"));
-        sender.sendMessage(MessageUtil.color("&8- &b/sa watch <player> &7- toggle watch mode"));
-        sender.sendMessage(MessageUtil.color("&8- &b/sa alerts &7- toggle personal alerts"));
-        sender.sendMessage(MessageUtil.color("&8- &b/sa note <player> <message> &7- add staff note"));
-        sender.sendMessage(MessageUtil.color("&8- &b/sa reset <player> &7- reset risk score"));
-        sender.sendMessage(MessageUtil.color("&8- &b/sa reload &7- reload config"));
-        sender.sendMessage(MessageUtil.color("&8- &b/sa version &7- show version"));
+        helpLine(sender, "profile", "<player>", "show player profile");
+        helpLine(sender, "timeline", "<player> [limit]", "show recent events");
+        helpLine(sender, "evidence", "<player>", "show investigation summary");
+        helpLine(sender, "export", "<player>", "export evidence report");
+        helpLine(sender, "top", "[limit]", "show highest risk players");
+        helpLine(sender, "watch", "<player>", "toggle watch mode");
+        helpLine(sender, "alerts", "", "toggle personal alerts");
+        helpLine(sender, "note", "<player> <message>", "add staff note");
+        helpLine(sender, "reset", "<player>", "reset risk score");
+        helpLine(sender, "reload", "", "reload config");
+        helpLine(sender, "version", "", "show version");
         sender.sendMessage(MessageUtil.color("&7Aliases: &b/smartadmin&7, &b/sa&7, &b/si"));
         sender.sendMessage(MessageUtil.color("&7Notice: &fSmartAdmin is not an anti-cheat. Review signals manually."));
+        sender.sendMessage(MessageUtil.color("&eBeta: test configuration changes on a staging server first."));
         return true;
+    }
+
+    private void helpLine(CommandSender sender, String sub, String arguments, String description) {
+        if (canUse(sender, sub)) {
+            sender.sendMessage(MessageUtil.color("&8- &b/sa " + sub + (arguments.isEmpty() ? "" : " " + arguments) + " &7- " + description));
+        }
     }
 
     private boolean profile(CommandSender sender, String[] args) {
@@ -133,7 +136,7 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(MessageUtil.color("&7Last Seen: &f" + TimeUtil.dateTime(profile.lastSeen())));
         try {
             int signalCount = timelineService.recentRiskSignals(profile.uuid(), 10).size();
-            sender.sendMessage(MessageUtil.color("&7Recent important signals: &f" + signalCount));
+            sender.sendMessage(MessageUtil.color("&7Latest positive-risk signals (up to 10): &f" + signalCount));
         } catch (SQLException exception) {
             sender.sendMessage(MessageUtil.color("&7Recent important signals: &cCould not load"));
             plugin.getLogger().warning("Could not load profile signal count: " + exception.getMessage());
@@ -237,9 +240,37 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
 
         try {
             EvidenceData report = loadEvidence(optionalProfile.get());
-            Path exportPath = writeEvidenceExport(report);
-            MessageUtil.send(sender, config.get().prefix(), "&aEvidence report exported: &f" + exportPath);
-        } catch (IOException | SQLException exception) {
+            Path folder = Path.of(config.get().exportFolder());
+            List<String> lines = List.copyOf(buildExportLines(report));
+            if (pendingExports.incrementAndGet() > 4) {
+                pendingExports.decrementAndGet();
+                MessageUtil.send(sender, config.get().prefix(), "&cExport queue is busy. Try again shortly.");
+                return true;
+            }
+            MessageUtil.send(sender, config.get().prefix(), "&7Export queued for &f" + report.profile().name() + "&7.");
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                String result;
+                try {
+                    Path exported = EvidenceFiles.write(folder, report.profile().name(), lines);
+                    result = "&aEvidence report exported: &f" + exported;
+                } catch (IOException exception) {
+                    result = "&cCould not write evidence report. Check the export folder and free disk space.";
+                    plugin.getLogger().warning("Evidence export failed: " + exception.getClass().getSimpleName());
+                } finally {
+                    pendingExports.decrementAndGet();
+                }
+                String message = result;
+                try {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        if (canUse(sender, "export") && (!(sender instanceof Player player) || player.isOnline())) {
+                            MessageUtil.send(sender, config.get().prefix(), message);
+                        }
+                    });
+                } catch (org.bukkit.plugin.IllegalPluginAccessException ignored) {
+                    // The report may finish during shutdown; do not schedule a callback on a disabled plugin.
+                }
+            });
+        } catch (SQLException | InvalidPathException exception) {
             MessageUtil.send(sender, config.get().prefix(), "&cCould not export evidence report.");
             plugin.getLogger().warning("Could not export SmartAdmin evidence report: " + exception.getMessage());
         }
@@ -312,7 +343,7 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean alerts(CommandSender sender) {
-        if (!hasStaff(sender)) {
+        if (!hasStaff(sender) && !sender.hasPermission("smartadmin.alerts")) {
             noPermission(sender);
             return true;
         }
@@ -349,7 +380,7 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        String note = joinArgs(args, 2).trim();
+        String note = EvidenceFiles.plainText(joinArgs(args, 2));
         if (note.isEmpty()) {
             MessageUtil.send(sender, config.get().prefix(), "&cNote text cannot be empty.");
             return true;
@@ -362,7 +393,8 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
 
         PlayerProfile profile = optionalProfile.get();
         try {
-            timelineService.record(profile.uuid(), profile.name(), TimelineEventType.STAFF_NOTE, null, 0, "Staff note by " + sender.getName(), note);
+            TimelineEvent saved = timelineService.record(profile.uuid(), profile.name(), TimelineEventType.STAFF_NOTE, null, 0, "Staff note by " + sender.getName(), note);
+            watchService.notify(saved);
             MessageUtil.send(sender, config.get().prefix(), "&aStaff note added for &f" + profile.name() + "&a.");
         } catch (SQLException exception) {
             MessageUtil.send(sender, config.get().prefix(), "&cCould not add staff note.");
@@ -390,8 +422,10 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         PlayerProfile profile = optionalProfile.get();
         try {
             long now = System.currentTimeMillis();
-            storage.updateRisk(profile.uuid(), 0, now);
-            timelineService.record(profile.uuid(), profile.name(), TimelineEventType.STAFF_ACTION, null, 0, "Risk score reset by " + sender.getName(), "");
+            TimelineEvent saved = storage.saveRiskAndEvent(0, new TimelineEvent(0, profile.uuid(), profile.name(), now,
+                    TimelineEventType.STAFF_ACTION, null, null, null, null, 0,
+                    "Risk score reset by " + sender.getName(), "oldScore=" + profile.riskScore() + "; newScore=0"));
+            watchService.notify(saved);
             MessageUtil.send(sender, config.get().prefix(), "&aRisk score reset for &f" + profile.name() + "&a.");
         } catch (SQLException exception) {
             MessageUtil.send(sender, config.get().prefix(), "&cCould not reset player risk score.");
@@ -405,8 +439,12 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             noPermission(sender);
             return true;
         }
-        reloadAction.run();
-        MessageUtil.send(sender, config.get().prefix(), "&aConfiguration reloaded.");
+        try {
+            reloadAction.run();
+            MessageUtil.send(sender, config.get().prefix(), "&aConfiguration reloaded.");
+        } catch (IllegalStateException exception) {
+            MessageUtil.send(sender, config.get().prefix(), "&c" + exception.getMessage());
+        }
         return true;
     }
 
@@ -422,9 +460,7 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
     private EvidenceData loadEvidence(PlayerProfile profile) throws SQLException {
         List<TimelineEvent> signals = timelineService.recentRiskSignals(profile.uuid(), 5);
         List<TimelineEvent> timeline = timelineService.recent(profile.uuid(), config.get().evidenceMaxTimelineEvents());
-        List<TimelineEvent> notes = timeline.stream()
-                .filter(event -> event.eventType() == TimelineEventType.STAFF_NOTE)
-                .toList();
+        List<TimelineEvent> notes = storage.getRecentNotes(profile.uuid(), 10);
         return new EvidenceData(profile, RiskLevel.fromScore(profile.riskScore()), signals, timeline, notes);
     }
 
@@ -453,18 +489,15 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             }
         }
 
+        if (!report.notes().isEmpty()) {
+            sender.sendMessage(MessageUtil.color("&7Recent Staff Notes:"));
+            for (TimelineEvent note : report.notes()) {
+                sender.sendMessage(MessageUtil.color("&8- &f" + EvidenceFiles.plainText(note.details())));
+            }
+        }
         if (config.get().evidenceIncludeRecommendation()) {
             sender.sendMessage(MessageUtil.color("&7Recommendation: &fManual review recommended. Do not punish without staff confirmation."));
         }
-    }
-
-    private Path writeEvidenceExport(EvidenceData report) throws IOException {
-        Path folder = Path.of(config.get().exportFolder());
-        Files.createDirectories(folder);
-        String filename = sanitizeFileName(report.profile().name()) + "-" + EXPORT_TIMESTAMP.format(Instant.now()) + "-evidence.txt";
-        Path output = folder.resolve(filename);
-        Files.write(output, buildExportLines(report), StandardCharsets.UTF_8);
-        return output;
     }
 
     private List<String> buildExportLines(EvidenceData report) {
@@ -500,10 +533,10 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         lines.add("");
         lines.add("Staff Notes:");
         if (report.notes().isEmpty()) {
-            lines.add("- No staff notes in recent timeline.");
+            lines.add("- No retained staff notes.");
         } else {
             for (TimelineEvent note : report.notes()) {
-                lines.add("- [" + TimeUtil.time(note.timestamp()) + "] " + note.reason() + ": " + note.details());
+                lines.add("- [" + TimeUtil.dateTime(note.timestamp()) + "] " + note.reason() + ": " + EvidenceFiles.plainText(note.details()));
             }
         }
         lines.add("");
@@ -516,16 +549,16 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         Player online = Bukkit.getPlayerExact(name);
         try {
             if (online != null) {
-                storage.upsertPlayer(online.getUniqueId(), online.getName(), System.currentTimeMillis());
                 return storage.findProfile(online.getUniqueId());
             }
             Optional<PlayerProfile> stored = storage.findProfileByName(name);
             if (stored.isPresent()) {
                 return stored;
             }
-            OfflinePlayer offline = Bukkit.getOfflinePlayer(name);
-            if (offline.hasPlayedBefore() && offline.getName() != null) {
-                return storage.findProfile(offline.getUniqueId());
+            try {
+                return storage.findProfile(UUID.fromString(name));
+            } catch (IllegalArgumentException ignored) {
+                // Unknown names are not resolved through a blocking external profile lookup.
             }
         } catch (SQLException exception) {
             plugin.getLogger().warning("Could not resolve SmartAdmin profile for " + name + ": " + exception.getMessage());
@@ -548,7 +581,7 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             line.append(" &8(").append("&c+").append(event.riskChange()).append(" risk&8)");
         }
         if (event.eventType() == TimelineEventType.STAFF_NOTE && event.details() != null && !event.details().isBlank()) {
-            line.append(" &7- &f").append(event.details());
+            line.append(" &7- &f").append(EvidenceFiles.plainText(event.details()));
         }
         return line.toString();
     }
@@ -568,7 +601,7 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             line.append(" (+").append(event.riskChange()).append(" risk)");
         }
         if (event.eventType() == TimelineEventType.STAFF_NOTE && event.details() != null && !event.details().isBlank()) {
-            line.append(" - ").append(event.details());
+            line.append(" - ").append(EvidenceFiles.plainText(event.details()));
         }
         return line.toString();
     }
@@ -588,10 +621,6 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         } catch (NumberFormatException exception) {
             return Optional.empty();
         }
-    }
-
-    private String sanitizeFileName(String name) {
-        return name.replaceAll("[^A-Za-z0-9._-]", "_");
     }
 
     private boolean hasStaff(CommandSender sender) {
@@ -624,9 +653,11 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            return filter(List.of("help", "profile", "timeline", "evidence", "export", "top", "watch", "alerts", "note", "reset", "reload", "version"), args[0]);
+            return filter(List.of("help", "profile", "timeline", "evidence", "export", "top", "watch", "alerts", "note", "reset", "reload", "version")
+                    .stream().filter(sub -> canUse(sender, sub)).toList(), args[0]);
         }
-        if (args.length == 2 && List.of("profile", "timeline", "watch", "evidence", "export", "reset", "note").contains(args[0].toLowerCase(Locale.ROOT))) {
+        if (args.length == 2 && canUse(sender, args[0].toLowerCase(Locale.ROOT))
+                && List.of("profile", "timeline", "watch", "evidence", "export", "reset", "note").contains(args[0].toLowerCase(Locale.ROOT))) {
             return Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)
                     .filter(name -> name.toLowerCase(Locale.ROOT).startsWith(args[1].toLowerCase(Locale.ROOT)))
@@ -641,6 +672,15 @@ public final class SmartAdminCommand implements CommandExecutor, TabCompleter {
         return values.stream()
                 .filter(value -> value.startsWith(lowerPrefix))
                 .toList();
+    }
+
+    private boolean canUse(CommandSender sender, String sub) {
+        return switch (sub) {
+            case "profile", "timeline", "watch" -> hasStaff(sender);
+            case "alerts" -> hasStaff(sender) || sender.hasPermission("smartadmin.alerts");
+            case "help", "version" -> hasAnyCommandPermission(sender);
+            default -> sender.hasPermission("smartadmin.admin") || sender.hasPermission("smartadmin." + sub);
+        };
     }
 
     private String joinArgs(String[] args, int startIndex) {

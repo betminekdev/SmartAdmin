@@ -44,7 +44,7 @@ Aliases: [B]/sa[/B], [B]/si[/B]
 
 [B]Beta Warning[/B]
 
-SmartAdmin v0.2.0-beta is an early public beta. Test it on a staging server first and tune the configuration for your community.
+SmartAdmin v0.3.0-beta is an early public beta. Test it on a staging server first and tune the configuration for your community.
 
 [B]Moderation Note[/B]
 

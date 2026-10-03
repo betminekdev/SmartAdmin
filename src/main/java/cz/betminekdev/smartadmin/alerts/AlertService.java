@@ -10,6 +10,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.net.URI;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -24,7 +26,9 @@ public final class AlertService {
     private final StorageService storage;
     private final Supplier<SmartAdminConfig> config;
     private final Map<UUID, Long> lastAlertByPlayer = new HashMap<>();
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final AtomicInteger pendingRequests = new AtomicInteger();
+    private volatile long discordBackoffUntil;
     private boolean warnedEmptyDiscordWebhook;
 
     public AlertService(JavaPlugin plugin, StorageService storage, Supplier<SmartAdminConfig> config) {
@@ -35,15 +39,14 @@ public final class AlertService {
 
     public void handleRiskIncrease(Player target, int oldScore, int newScore, String reason) {
         SmartAdminConfig current = config.get();
-        if (!current.alertsEnabled() || newScore < current.alertThreshold()) {
+        if (!current.alertsEnabled() || newScore <= oldScore || newScore < current.alertThreshold()) {
             return;
         }
 
         long now = System.currentTimeMillis();
         long lastAlert = lastAlertByPlayer.getOrDefault(target.getUniqueId(), 0L);
-        boolean crossedThreshold = oldScore < current.alertThreshold();
         boolean cooldownExpired = now - lastAlert >= current.alertCooldownSeconds() * 1000L;
-        if (!crossedThreshold && !cooldownExpired) {
+        if (!cooldownExpired) {
             return;
         }
 
@@ -62,9 +65,14 @@ public final class AlertService {
 
     public void warnIfDiscordMisconfigured() {
         SmartAdminConfig current = config.get();
-        if (current.discordEnabled() && current.discordWebhookUrl().isBlank() && !warnedEmptyDiscordWebhook) {
-            plugin.getLogger().warning("Discord alerts are enabled, but discord.webhook-url is empty. Discord alerts will not be sent.");
-            warnedEmptyDiscordWebhook = true;
+        warnedEmptyDiscordWebhook = false;
+        if (current.discordEnabled()) {
+            try {
+                DiscordWebhook.validate(current.discordWebhookUrl());
+            } catch (IllegalArgumentException exception) {
+                plugin.getLogger().warning("Discord alerts disabled: " + exception.getMessage());
+                warnedEmptyDiscordWebhook = true;
+            }
         }
     }
 
@@ -82,16 +90,16 @@ public final class AlertService {
         }
     }
 
-    public void clearCooldowns() {
+    public void close() {
         lastAlertByPlayer.clear();
+        httpClient.shutdownNow();
     }
 
     private void sendDiscordAlert(String playerName, int riskScore, String reason, SmartAdminConfig current) {
         if (!current.discordEnabled()) {
             return;
         }
-        if (current.discordWebhookUrl().isBlank()) {
-            warnIfDiscordMisconfigured();
+        if (warnedEmptyDiscordWebhook || System.currentTimeMillis() < discordBackoffUntil) {
             return;
         }
         if (current.discordHighRiskOnly() && riskScore < current.highRiskThreshold()) {
@@ -105,31 +113,46 @@ public final class AlertService {
                 + "Status: " + level.name() + "\n"
                 + "Reason: " + reason + "\n"
                 + "Suggested: /sa evidence " + playerName;
-        String body = "{\"content\":\"" + escapeJson(content) + "\"}";
+        String body = DiscordWebhook.payload(content);
+        URI endpoint;
+        try {
+            endpoint = DiscordWebhook.validate(current.discordWebhookUrl());
+        } catch (IllegalArgumentException exception) {
+            return;
+        }
+        if (pendingRequests.incrementAndGet() > 4) {
+            pendingRequests.decrementAndGet();
+            return;
+        }
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
-                HttpRequest request = HttpRequest.newBuilder(URI.create(current.discordWebhookUrl()))
+                HttpRequest request = HttpRequest.newBuilder(endpoint)
+                        .timeout(Duration.ofSeconds(10))
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(body))
                         .build();
                 HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+                if (response.statusCode() == 429) {
+                    long retrySeconds = 60;
+                    try {
+                        retrySeconds = Math.max(1, Math.min(3600, (long) Math.ceil(Double.parseDouble(
+                                response.headers().firstValue("Retry-After").orElse("60")))));
+                    } catch (NumberFormatException ignored) {
+                        // Use a conservative backoff for an unrecognized header.
+                    }
+                    discordBackoffUntil = System.currentTimeMillis() + retrySeconds * 1000L;
+                }
                 if (response.statusCode() >= 300) {
                     plugin.getLogger().warning("Discord webhook returned HTTP " + response.statusCode() + ".");
                 }
-            } catch (IllegalArgumentException exception) {
-                plugin.getLogger().warning("Discord webhook URL is invalid: " + exception.getMessage());
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
             } catch (Exception exception) {
-                plugin.getLogger().warning("Could not send Discord webhook alert: " + exception.getMessage());
+                plugin.getLogger().warning("Discord delivery failed (" + exception.getClass().getSimpleName() + "). Check connectivity; webhook URL omitted.");
+            } finally {
+                pendingRequests.decrementAndGet();
             }
         });
-    }
-
-    private String escapeJson(String value) {
-        return value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "");
     }
 }

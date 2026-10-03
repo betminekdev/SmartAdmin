@@ -7,7 +7,7 @@ public final class SelfTest {
     private SelfTest() {
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         assertEquals(RiskLevel.SAFE, RiskLevel.fromScore(0), "0 should be SAFE");
         assertEquals(RiskLevel.SAFE, RiskLevel.fromScore(25), "25 should be SAFE");
         assertEquals(RiskLevel.WATCH, RiskLevel.fromScore(26), "26 should be WATCH");
@@ -21,6 +21,9 @@ public final class SelfTest {
         assertEquals(64, RiskService.clampScore(64, 100), "normal scores should not change");
         assertEquals(100, RiskService.clampScore(150, 100), "scores should clamp to max");
         assertEquals(1, RiskService.clampScore(10, 0), "invalid max score should behave as one");
+        assertEquals(100, RiskService.clampScore((long) Integer.MAX_VALUE + 100, Integer.MAX_VALUE), "overflow must not reset risk");
+        RegressionTests.run();
+        System.out.println("SmartAdmin regression tests passed.");
     }
 
     private static void assertEquals(Object expected, Object actual, String message) {

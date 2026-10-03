@@ -16,6 +16,14 @@ Linux/macOS:
 ./gradlew clean build --console plain
 ```
 
+## Automated Verification
+
+The build runs `smartAdminSelfTest` using a Java 21 toolchain. It includes the risk-level boundary checks and regression tests for real SQLite transactions/restarts, the mining listener with test player/block proxies, configuration bounds, command permissions, unique exports, chat windows, and Discord payload validation.
+
+Run `./gradlew smartAdminSelfTest --console plain` for the focused suite. Temporary test databases are isolated and removed after the run. The harness avoids a separate JUnit worker because of the project's accented Windows path. `test NO-SOURCE` in Gradle output is expected: look for `SmartAdmin regression tests passed` from the JavaExec task.
+
+Do not interpret these tests as a live Paper/Spigot integration test or Discord delivery test. Complete `docs/manual-testing.md` for runtime behavior changes.
+
 ## Code Style
 
 - Keep classes focused.

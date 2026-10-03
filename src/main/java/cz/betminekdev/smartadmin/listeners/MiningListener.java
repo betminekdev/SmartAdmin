@@ -7,6 +7,7 @@ import cz.betminekdev.smartadmin.storage.StorageService;
 import cz.betminekdev.smartadmin.timeline.TimelineEventType;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,7 +31,7 @@ public final class MiningListener implements Listener {
         this.config = config;
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         SmartAdminConfig current = config.get();
         if (!current.miningEnabled()) {
@@ -64,9 +65,13 @@ public final class MiningListener implements Listener {
         UUID uuid = event.getPlayer().getUniqueId();
         long since = System.currentTimeMillis() - current.burstWindowMinutes() * 60_000L;
         try {
+            Map<String, Integer> counts = storage.miningCounts(uuid, since);
+            Material mined = event.getBlock().getType();
             if (current.burstEnabled()) {
-                int diamondCount = count(uuid, Material.DIAMOND_ORE, since) + count(uuid, Material.DEEPSLATE_DIAMOND_ORE, since);
-                if (diamondCount == current.diamondThreshold()) {
+                int diamondCount = counts.getOrDefault("DIAMOND_ORE", 0) + counts.getOrDefault("DEEPSLATE_DIAMOND_ORE", 0);
+                if ((mined == Material.DIAMOND_ORE || mined == Material.DEEPSLATE_DIAMOND_ORE)
+                        && diamondCount >= current.diamondThreshold()
+                        && !storage.hasRecentSignal(uuid, TimelineEventType.ORE_BURST.name(), "oreGroup=diamond", since)) {
                     riskService.addSignal(
                             event.getPlayer(),
                             TimelineEventType.ORE_BURST,
@@ -77,8 +82,9 @@ public final class MiningListener implements Listener {
                     );
                 }
 
-                int ancientDebrisCount = count(uuid, Material.ANCIENT_DEBRIS, since);
-                if (ancientDebrisCount == current.ancientDebrisThreshold()) {
+                int ancientDebrisCount = counts.getOrDefault("ANCIENT_DEBRIS", 0);
+                if (mined == Material.ANCIENT_DEBRIS && ancientDebrisCount >= current.ancientDebrisThreshold()
+                        && !storage.hasRecentSignal(uuid, TimelineEventType.ORE_BURST.name(), "oreGroup=ancient_debris", since)) {
                     riskService.addSignal(
                             event.getPlayer(),
                             TimelineEventType.ORE_BURST,
@@ -91,8 +97,10 @@ public final class MiningListener implements Listener {
             }
 
             if (current.newPlayerMiningEnabled() && isNewPlayer(uuid, current)) {
-                int valuableCount = countValuableOres(uuid, current.valuableOres(), since);
-                if (valuableCount == current.newPlayerValuableOreThreshold()) {
+                int valuableCount = current.valuableOres().keySet().stream()
+                        .mapToInt(material -> counts.getOrDefault(material.name(), 0)).sum();
+                if (valuableCount >= current.newPlayerValuableOreThreshold()
+                        && !storage.hasRecentSignal(uuid, TimelineEventType.NEW_PLAYER_MINING.name(), "", since)) {
                     riskService.addSignal(
                             event.getPlayer(),
                             TimelineEventType.NEW_PLAYER_MINING,
@@ -106,18 +114,6 @@ public final class MiningListener implements Listener {
         } catch (SQLException exception) {
             plugin.getLogger().warning("Could not evaluate mining burst for " + event.getPlayer().getName() + ": " + exception.getMessage());
         }
-    }
-
-    private int countValuableOres(UUID uuid, Map<Material, Integer> ores, long since) throws SQLException {
-        int total = 0;
-        for (Material material : ores.keySet()) {
-            total += count(uuid, material, since);
-        }
-        return total;
-    }
-
-    private int count(UUID uuid, Material material, long since) throws SQLException {
-        return storage.countTimelineEvents(uuid, TimelineEventType.MINE_VALUABLE_ORE.name(), material.name(), since);
     }
 
     private boolean isNewPlayer(UUID uuid, SmartAdminConfig current) throws SQLException {

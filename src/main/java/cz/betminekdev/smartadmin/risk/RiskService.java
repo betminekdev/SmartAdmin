@@ -43,17 +43,19 @@ public final class RiskService {
             int oldScore = optionalProfile.map(PlayerProfile::riskScore).orElse(0);
             boolean bypassed = player.hasPermission("smartadmin.bypass") && !current.scoreBypassedPlayers();
             int appliedRisk = bypassed ? 0 : Math.max(0, riskChange);
-            int newScore = clampScore(oldScore + appliedRisk, current.maxScore());
-
-            if (newScore != oldScore) {
-                storage.updateRisk(player.getUniqueId(), newScore, now);
-            }
+            int newScore = bypassed ? oldScore : clampScore((long) oldScore + appliedRisk, current.maxScore());
 
             String fullDetails = details == null ? "" : details;
             if (bypassed) {
                 fullDetails = fullDetails.isEmpty() ? "bypassed=true" : fullDetails + "; bypassed=true";
             }
-            TimelineEvent event = timelineService.record(player, eventType, location, appliedRisk, reason, fullDetails);
+            TimelineEvent event = storage.saveRiskAndEvent(newScore, new TimelineEvent(
+                    0, player.getUniqueId(), player.getName(), now, eventType,
+                    location != null && location.getWorld() != null ? location.getWorld().getName() : null,
+                    location != null ? location.getBlockX() : null,
+                    location != null ? location.getBlockY() : null,
+                    location != null ? location.getBlockZ() : null,
+                    newScore - oldScore, reason, fullDetails));
             watchService.notify(event);
 
             if (newScore != oldScore && RiskLevel.fromScore(oldScore) != RiskLevel.fromScore(newScore)) {
@@ -68,7 +70,7 @@ public final class RiskService {
                 watchService.notify(riskEvent);
             }
 
-            if (appliedRisk > 0) {
+            if (newScore > oldScore) {
                 alertService.handleRiskIncrease(player, oldScore, newScore, reason);
             }
         } catch (SQLException exception) {
@@ -91,7 +93,7 @@ public final class RiskService {
         }
     }
 
-    public static int clampScore(int score, int maxScore) {
-        return Math.max(0, Math.min(Math.max(1, maxScore), score));
+    public static int clampScore(long score, int maxScore) {
+        return (int) Math.max(0, Math.min(Math.min(100, Math.max(1, maxScore)), score));
     }
 }

@@ -59,7 +59,7 @@ public final class SmartAdminConfig {
 
     private SmartAdminConfig(FileConfiguration config) {
         this.prefix = config.getString("messages.prefix", "&8[&bSmartAdmin&8]&r ");
-        this.maxScore = Math.max(1, config.getInt("risk.max-score", 100));
+        this.maxScore = Math.max(1, Math.min(100, config.getInt("risk.max-score", 100)));
         this.decayEnabled = config.getBoolean("risk.decay-enabled", true);
         this.decayAmount = Math.max(0, config.getInt("risk.decay-amount", 2));
         this.decayIntervalMinutes = Math.max(1, config.getInt("risk.decay-interval-minutes", 30));
@@ -79,26 +79,26 @@ public final class SmartAdminConfig {
         this.tntRisk = Math.max(0, config.getInt("signals.block-place.tnt-risk", 4));
         this.lavaRisk = Math.max(0, config.getInt("signals.block-place.lava-risk", 3));
         this.chatEnabled = config.getBoolean("signals.chat.enabled", true);
-        this.spamMessageCount = Math.max(2, config.getInt("signals.chat.spam-message-count", 5));
+        this.spamMessageCount = Math.max(2, Math.min(1000, config.getInt("signals.chat.spam-message-count", 5)));
         this.spamWindowSeconds = Math.max(1, config.getInt("signals.chat.spam-window-seconds", 8));
         this.spamRisk = Math.max(0, config.getInt("signals.chat.spam-risk", 5));
         this.suspiciousLinkRisk = Math.max(0, config.getInt("signals.chat.suspicious-link-risk", 4));
         this.alertsEnabled = config.getBoolean("alerts.enabled", true);
-        this.alertThreshold = Math.max(1, config.getInt("alerts.threshold", 60));
-        this.highRiskThreshold = Math.max(alertThreshold, config.getInt("alerts.high-risk-threshold", 80));
+        this.alertThreshold = Math.max(1, Math.min(maxScore, config.getInt("alerts.threshold", 60)));
+        this.highRiskThreshold = Math.max(alertThreshold, Math.min(maxScore, config.getInt("alerts.high-risk-threshold", 80)));
         this.alertCooldownSeconds = Math.max(1, config.getInt("alerts.cooldown-seconds", 30));
         this.storageType = config.getString("storage.type", "sqlite");
         this.databaseFile = config.getString("storage.database-file", "plugins/SmartAdmin/smartadmin.db");
         this.keepDataDays = Math.max(1, config.getInt("storage.keep-data-days", 14));
         this.watchEnabled = config.getBoolean("watch.enabled", true);
-        this.noteMaxLength = Math.max(1, config.getInt("notes.max-length", 200));
+        this.noteMaxLength = Math.max(1, Math.min(2000, config.getInt("notes.max-length", 200)));
         this.evidenceEnabled = config.getBoolean("evidence.enabled", true);
         this.evidenceMaxTimelineEvents = Math.max(1, Math.min(30, config.getInt("evidence.max-timeline-events", 15)));
         this.evidenceIncludeRecommendation = config.getBoolean("evidence.include-recommendation", true);
         this.exportEnabled = config.getBoolean("export.enabled", true);
         this.exportFolder = config.getString("export.folder", "plugins/SmartAdmin/exports");
         this.exportFormat = config.getString("export.format", "txt");
-        this.topMaxLimit = Math.max(1, config.getInt("top.max-limit", 25));
+        this.topMaxLimit = Math.max(1, Math.min(100, config.getInt("top.max-limit", 25)));
         this.topDefaultLimit = Math.max(1, Math.min(topMaxLimit, config.getInt("top.default-limit", 10)));
         this.discordEnabled = config.getBoolean("discord.enabled", false);
         this.discordWebhookUrl = config.getString("discord.webhook-url", "");

@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "cz.betminekdev"
-version = "0.2.0-beta"
+version = "0.3.0-beta"
 
 java {
     toolchain {
@@ -18,11 +18,16 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    testRuntimeOnly("org.xerial:sqlite-jdbc:3.53.4.0")
 }
 
 val smartAdminSelfTest by tasks.registering(JavaExec::class) {
     group = "verification"
-    description = "Runs lightweight SmartAdmin logic self-tests."
+    description = "Runs SmartAdmin regression and SQLite integration tests."
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    })
 
     val testSourceSet = sourceSets.test.get()
     classpath = testSourceSet.runtimeClasspath
@@ -31,6 +36,8 @@ val smartAdminSelfTest by tasks.registering(JavaExec::class) {
 
 tasks.jar {
     archiveBaseName.set("SmartAdmin")
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
 }
 
 tasks.test {

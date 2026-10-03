@@ -42,6 +42,18 @@ SmartAdmin can add risk for valuable ores, high-value ore bursts, ancient debris
 
 These signals are useful starting points for staff review. They should be combined with timeline context, server rules, player history, and manual observation.
 
+Starting with 0.3, a bonus fires only for the ore group being mined, at most once per time window per group. Diamond variants combine; ancient debris is separate. New-player bonuses have a window cooldown too. Cooldowns survive restart while their records remain retained.
+
+Ore placement provenance is not tracked: placed ores, creative mining, and legitimate mining sessions can create signals. This is not xray classification.
+
+Timeline risk changes record the actual score delta after capping. At the cap, actions still appear with zero change and do not send additional risk-increase alerts. Staff resets have a zero-change staff-action entry with old/new scores in details.
+
+## Chat and Block Signals
+
+Chat-rate and link signals have independent cooldowns matching the chat window. Chat bodies are not stored. A link is not inherently malicious: the URL pattern is only a review signal.
+
+TNT placement and successful lava bucket emptying are recorded without claim ownership checks. Cancelled mining and placement events are ignored. There is no claim integration or grief verdict.
+
 ## Risk Levels
 
 | Score | Level | Meaning |

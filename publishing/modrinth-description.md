@@ -34,7 +34,7 @@ Key commands include `/sa profile`, `/sa timeline`, `/sa evidence`, `/sa export`
 
 ## Beta Notice
 
-SmartAdmin `v0.2.0-beta` is an early beta. Test it on a staging server before production use and tune thresholds for your server.
+SmartAdmin `v0.3.0-beta` is an early beta. Test it on a staging server before production use and tune thresholds for your server.
 
 ## Links
 

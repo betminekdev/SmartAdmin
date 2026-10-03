@@ -13,6 +13,8 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,6 +36,7 @@ public final class SQLiteStorageService implements StorageService {
         connection = DriverManager.getConnection("jdbc:sqlite:" + databaseFile.getPath());
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate("PRAGMA journal_mode=WAL");
+            statement.executeUpdate("PRAGMA busy_timeout=1000");
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS players ("
                     + "uuid TEXT PRIMARY KEY,"
                     + "name TEXT NOT NULL,"
@@ -58,6 +61,8 @@ public final class SQLiteStorageService implements StorageService {
                     + ")");
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_timeline_player_time ON timeline_events(player_uuid, timestamp DESC)");
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_timeline_type_time ON timeline_events(event_type, timestamp DESC)");
+            statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_timeline_player_type_time ON timeline_events(player_uuid, event_type, timestamp DESC)");
+            statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_players_name ON players(lower(name), last_seen DESC)");
         }
     }
 
@@ -194,11 +199,11 @@ public final class SQLiteStorageService implements StorageService {
     public synchronized int countTimelineEvents(UUID uuid, String eventType, String materialName, long sinceMillis) throws SQLException {
         ensureOpen();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT COUNT(*) FROM timeline_events WHERE player_uuid = ? AND event_type = ? AND timestamp >= ? AND details LIKE ?")) {
+                "SELECT COUNT(*) FROM timeline_events WHERE player_uuid = ? AND event_type = ? AND timestamp >= ? AND substr(details, 1, instr(details || ';', ';') - 1) = ?")) {
             statement.setString(1, uuid.toString());
             statement.setString(2, eventType);
             statement.setLong(3, sinceMillis);
-            statement.setString(4, "%material=" + materialName + "%");
+            statement.setString(4, "material=" + materialName);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next() ? resultSet.getInt(1) : 0;
             }
@@ -239,6 +244,82 @@ public final class SQLiteStorageService implements StorageService {
             // Shutdown should not throw into Bukkit.
         } finally {
             connection = null;
+        }
+    }
+
+    @Override
+    public synchronized TimelineEvent saveRiskAndEvent(int score, TimelineEvent event) throws SQLException {
+        ensureOpen();
+        connection.setAutoCommit(false);
+        try {
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE players SET risk_score = ? WHERE uuid = ?")) {
+                statement.setInt(1, Math.max(0, Math.min(100, score)));
+                statement.setString(2, event.playerUuid().toString());
+                if (statement.executeUpdate() != 1) {
+                    throw new SQLException("Player profile does not exist.");
+                }
+            }
+            TimelineEvent saved = addTimelineEvent(event);
+            connection.commit();
+            return saved;
+        } catch (SQLException | RuntimeException exception) {
+            try {
+                connection.rollback();
+            } catch (SQLException rollbackFailure) {
+                exception.addSuppressed(rollbackFailure);
+            }
+            throw exception;
+        } finally {
+            connection.setAutoCommit(true);
+        }
+    }
+
+    @Override
+    public synchronized Map<String, Integer> miningCounts(UUID uuid, long sinceMillis) throws SQLException {
+        ensureOpen();
+        Map<String, Integer> counts = new HashMap<>();
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT substr(details, 1, instr(details || ';', ';') - 1) AS material, COUNT(*) AS total "
+                        + "FROM timeline_events WHERE player_uuid = ? AND event_type = 'MINE_VALUABLE_ORE' AND timestamp >= ? GROUP BY material")) {
+            statement.setString(1, uuid.toString());
+            statement.setLong(2, sinceMillis);
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    String detail = rows.getString("material");
+                    if (detail.startsWith("material=")) {
+                        counts.put(detail.substring("material=".length()), rows.getInt("total"));
+                    }
+                }
+            }
+        }
+        return counts;
+    }
+
+    @Override
+    public synchronized boolean hasRecentSignal(UUID uuid, String eventType, String firstDetail, long sinceMillis) throws SQLException {
+        ensureOpen();
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT 1 FROM timeline_events WHERE player_uuid = ? AND event_type = ? AND timestamp >= ? "
+                        + "AND (? = '' OR substr(details, 1, instr(details || ';', ';') - 1) = ?) LIMIT 1")) {
+            statement.setString(1, uuid.toString());
+            statement.setString(2, eventType);
+            statement.setLong(3, sinceMillis);
+            statement.setString(4, firstDetail);
+            statement.setString(5, firstDetail);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next();
+            }
+        }
+    }
+
+    @Override
+    public synchronized List<TimelineEvent> getRecentNotes(UUID uuid, int limit) throws SQLException {
+        ensureOpen();
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT * FROM timeline_events WHERE player_uuid = ? AND event_type = 'STAFF_NOTE' ORDER BY timestamp DESC, id DESC LIMIT ?")) {
+            statement.setString(1, uuid.toString());
+            statement.setInt(2, Math.max(1, Math.min(30, limit)));
+            return readEvents(statement);
         }
     }
 

@@ -1,62 +1,37 @@
-# SmartAdmin v0.2.0-beta - Investigation Update
+# SmartAdmin v0.3.0-beta - Reliability Update
 
-SmartAdmin is a smart staff assistant for Minecraft servers.
+SmartAdmin is a smart staff assistant, not an anti-cheat. Risk scores, timelines, alerts, notes, and evidence reports support manual investigation. There are no automatic punishments or guarantees of cheat detection.
 
-It is not a classic anti-cheat. It does not auto-ban players and does not claim perfect cheat detection. SmartAdmin collects server-side signals, creates player timelines, calculates risk scores, and helps staff investigate suspicious behavior faster.
+## Highlights
 
-## What Is Included
+- Atomic SQLite risk updates and audit events, exact ore counts, and persistent burst cooldowns.
+- Bounded chat history processed on the server thread and working lava bucket signals.
+- Permission-aware help and completion, with current permission checks for watch delivery.
+- Offline resets preserve last-seen time; evidence includes retained notes independently of its recent timeline.
+- Unique text exports written asynchronously with a bounded queue.
+- Invalid YAML reloads leave previous settings active.
+- Discord endpoint validation, disabled mentions, timeouts, request limits, and HTTP 429 backoff.
+- SQLite JDBC 3.53.4.0 and expanded automated regression coverage.
 
-- Player risk score from 0 to 100.
-- Risk levels: SAFE, WATCH, SUSPICIOUS, HIGH_RISK.
-- Persistent player timeline.
-- Suspicious mining signals for valuable ores and ore bursts.
-- Staff alerts with cooldowns.
-- In-memory watch mode.
-- Staff notes in player timelines.
-- Evidence report command.
-- Evidence text export command.
-- Top risk players command.
-- Basic Discord webhook alerts.
-- SQLite storage.
-- Configurable thresholds, note length, evidence limits, export folder, top limits, and risk decay.
-- Commands under `/smartadmin`, with `/sa` and `/si` aliases.
+## Installation and Upgrade
 
-## New in v0.2.0-beta
+1. Stop the server and back up the entire `plugins/SmartAdmin` folder.
+2. Replace the old JAR with `SmartAdmin-0.3.0-beta.jar`. Keep only one SmartAdmin JAR.
+3. Retain existing config and SQLite data. No table recreation or config deletion is required.
+4. Start the server, check the console, then run `/sa version` and `/sa help`.
+5. Complete [the manual test checklist](docs/manual-testing.md) on staging before production.
 
-- Added `/sa evidence <player>`.
-- Added `/sa export <player>`.
-- Added `/sa top [limit]`.
-- Added `/sa timeline <player> [limit]`.
-- Improved `/sa profile <player>`.
-- Improved `/sa help`.
-- Added basic async Discord webhook alerts.
-- Added `smartadmin.evidence`, `smartadmin.export`, and `smartadmin.top` permissions.
+Build: `./gradlew clean build --console plain` (Windows: `.\gradlew.bat clean build --console plain`).
 
-## Installation
+## Compatibility and Limitations
 
-1. Download `SmartAdmin-0.2.0-beta.jar`.
-2. Put it in your server `plugins` folder.
-3. Start your Paper/Spigot server.
-4. Confirm `plugins/SmartAdmin/config.yml` was created.
-5. Tune thresholds for your server.
-6. Use `/sa help` in-game.
+Java 21 bytecode and the Paper API 1.21.11 baseline are retained. Paper 26.1+ requires Java 25; the build alone does not prove in-game compatibility. Test your exact Paper/Spigot version. Folia is not supported.
 
-## Beta Warning
+Database operations are still synchronous. Benchmark on busy servers. Ordinary mining, placed ores, and legitimate links can create signals. New-player age is time since first seen, not online playtime. Staff notes follow timeline retention. Reports do not automatically redact private information.
 
-This is a beta release. Test it on a staging server before using it on a live network.
+Discord is optional, disabled by default, and best effort. Alerts may be dropped during backoff, saturation, or shutdown. Full evidence summaries are not sent. Watch sessions end on staff logout or restart.
 
-The mining detector is a configurable heuristic. Treat alerts and reports as review signals, not proof.
-
-## Known Limitations
-
-- No auto-ban.
-- No client-side detection.
-- No perfect xray detection.
-- No screenshot or device inspection.
-- No GUI yet.
-- No web dashboard yet.
-- Watch mode does not persist after restart.
-- SQLite is the only storage backend in v0.2.
+This is a beta candidate. Automated verification does not replace multiplayer server testing.
 
 ## Marketplace Links
 

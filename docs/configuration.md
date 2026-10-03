@@ -4,6 +4,8 @@ SmartAdmin creates `plugins/SmartAdmin/config.yml` on first startup.
 
 After editing normal thresholds or message settings, run `/sa reload`. Restart the server after changing storage paths.
 
+Malformed YAML or a changed database path rejects the reload and retains the previous settings. Missing keys use defaults; your file is not rewritten.
+
 ## Messages
 
 ```yaml
@@ -26,7 +28,7 @@ risk:
 
 | Setting | Meaning |
 | --- | --- |
-| `max-score` | Upper limit for player risk. |
+| `max-score` | Upper limit for risk, clamped to 1-100. Risk levels always use the fixed 0-100 scale. |
 | `decay-enabled` | Whether risk lowers over time. |
 | `decay-amount` | How much risk is removed each decay interval. |
 | `decay-interval-minutes` | How often decay runs. |
@@ -37,6 +39,8 @@ risk:
 `mining.valuable-ores` maps Bukkit material names to risk points.
 
 The burst detector adds extra risk when a player mines enough configured ore in a short time window. This is a review signal, not proof of xray.
+
+Each ore group receives at most one bonus per window, including across restarts. Diamond and deepslate diamond share a group. The historical key `mining.new-player.max-playtime-minutes` measures elapsed time since first seen, not online playtime.
 
 ## Signals
 
@@ -69,7 +73,7 @@ storage:
   keep-data-days: 14
 ```
 
-Only SQLite is supported in `v0.2.0-beta`. Timeline cleanup uses `keep-data-days`.
+Only SQLite is supported. Timeline cleanup uses `keep-data-days` at startup and includes staff notes. Profile scores and alert preferences are retained. Stop the server before backing up its database and WAL files.
 
 ## Notes
 
@@ -79,6 +83,8 @@ notes:
 ```
 
 `notes.max-length` controls the maximum length of `/sa note <player> <message>`.
+
+The limit is clamped to 1-2000. Notes are plain text: formatting and control codes are removed. Do not enter secrets or private information that should not appear in reports.
 
 ## Evidence
 
@@ -102,6 +108,8 @@ export:
 
 Evidence exports are written as text reports. Do not use exports as automatic punishment proof.
 
+Only `txt` is supported. Exports have unique filenames and at most four outstanding writes. Keep the export folder private and redact reports before sharing.
+
 ## Top Risk
 
 ```yaml
@@ -111,6 +119,8 @@ top:
 ```
 
 These values control `/sa top` and `/sa top <limit>`.
+
+`top.max-limit` is capped at 100 to bound output.
 
 ## Discord
 
@@ -123,3 +133,7 @@ discord:
 ```
 
 Discord webhook alerts are disabled by default. When enabled, SmartAdmin sends simple alert messages asynchronously after the normal staff alert threshold and cooldown checks pass.
+
+Use an official HTTPS Discord webhook URL without query parameters. Custom proxies are not supported. Mentions are disabled. Requests have a ten-second deadline and five-second connection timeout, with at most four in flight. HTTP 429 pauses sends using `Retry-After` (1-3600 seconds, fallback 60). Delivery is best effort, not a persistent queue.
+
+`send-evidence-summary` is reserved and has no effect. Only the triggering signal is included; notes and full evidence are not sent. Keep the webhook token secret.

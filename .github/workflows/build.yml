@@ -7,9 +7,17 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,4 +40,5 @@ jobs:
           name: SmartAdmin-jar
           path: build/libs/*.jar
           if-no-files-found: error
+          retention-days: 14
 

@@ -6,7 +6,7 @@ Aliases: `/sa`, `/si`
 
 | Command | Permission | Purpose |
 | --- | --- | --- |
-| `/sa help` | `smartadmin.staff` or `smartadmin.admin` | Show available commands. |
+| `/sa help` | Any SmartAdmin command permission | Show commands available to the sender. |
 | `/sa profile <player>` | `smartadmin.staff` or `smartadmin.admin` | Review risk score, risk level, last seen time, and recent signals. |
 | `/sa timeline <player> [limit]` | `smartadmin.staff` or `smartadmin.admin` | Review recent important events for a player. |
 | `/sa evidence <player>` | `smartadmin.evidence` or `smartadmin.admin` | Show an investigation summary. |
@@ -17,9 +17,11 @@ Aliases: `/sa`, `/si`
 | `/sa reset <player>` | `smartadmin.reset` or `smartadmin.admin` | Reset a player's risk score to `0` and add a staff action timeline event. |
 | `/sa note <player> <message>` | `smartadmin.note` or `smartadmin.admin` | Add a staff note to the player's timeline without changing risk. |
 | `/sa reload` | `smartadmin.reload` or `smartadmin.admin` | Reload configuration. |
-| `/sa version` | `smartadmin.staff` or `smartadmin.admin` | Show the installed plugin version. |
+| `/sa version` | Any SmartAdmin command permission | Show the installed plugin version. |
 
 ## Usage Notes
+
+Player arguments accept a known name or UUID, including stored offline profiles. Unknown names do not trigger an external lookup. Help and tab completion are permission-aware.
 
 Use `/sa profile <player>` for a quick summary before taking action.
 
@@ -29,9 +31,11 @@ Use `/sa evidence <player>` to show a compact investigation summary with risk, s
 
 Use `/sa export <player>` to write the evidence report to `plugins/SmartAdmin/exports`.
 
+Export confirms when its asynchronous file write completes. Reports never overwrite each other. Review private notes before sharing reports.
+
 Use `/sa top [limit]` to list the highest risk known players. Players with `0` risk are ignored.
 
-Use `/sa watch <player>` during manual investigation. Watch mode is in-memory and resets when the server restarts.
+Use `/sa watch <player>` during manual investigation. Watch mode resets on staff logout or server restart. Delivery requires current staff/admin permission.
 
 Use `/sa reset <player>` when a reviewed score should be cleared. The command works for known player profiles, including known offline players, and records the reset in the timeline.
 

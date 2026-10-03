@@ -12,7 +12,9 @@ public final class MessageUtil {
     }
 
     public static void send(CommandSender sender, String prefix, String message) {
-        sender.sendMessage(color(prefix + message));
+        String safePrefix = prefix == null ? "" : prefix;
+        String separator = safePrefix.isEmpty() || Character.isWhitespace(safePrefix.charAt(safePrefix.length() - 1)) ? "" : " ";
+        sender.sendMessage(color(safePrefix + separator + message));
     }
 
     public static String riskColor(int score) {

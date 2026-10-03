@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0-beta - Reliability Update
+
+- Risk updates and timeline events now commit in one SQLite transaction; resets preserve offline last-seen timestamps.
+- Fixed repeated diamond/debris bonuses while mining other ores. Persistent cooldowns apply per ore group and new-player window.
+- Mining counts use one grouped query, exact material matching, and additional database indexes.
+- Fixed chat state races, unbounded burst history, repeated link signals, and lava bucket event handling.
+- Help and tab completion respect individual permissions. Known offline profiles support UUID lookup without external name resolution.
+- Evidence includes retained notes independently of its recent timeline. Exports use unique filenames and a bounded async write queue.
+- Watch delivery checks current permissions; sessions clear on staff logout.
+- Invalid YAML reloads retain previous settings; changed database paths require restart.
+- Discord now validates endpoints, disables mentions, bounds requests, uses timeouts and HTTP 429 backoff, and avoids logging webhook secrets.
+- SQLite JDBC updated to 3.53.4.0. Java 21 remains the bytecode baseline.
+- Added SQLite integration, mining listener, configuration, permission, export, and webhook regression tests.
+- Existing tables and config keys remain supported. Back up before upgrading; manual server testing is still required.
+
 ## 0.2.0-beta - Investigation Update
 
 ### Added

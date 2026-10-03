@@ -7,7 +7,7 @@ SmartAdmin keeps permissions simple for the beta release.
 | `smartadmin.admin` | `op` | Full access to all SmartAdmin commands. |
 | `smartadmin.staff` | `op` | Access to profile, timeline, watch, alerts, help, and version. |
 | `smartadmin.reload` | `op` | Access to `/sa reload`. |
-| `smartadmin.alerts` | `op` | Allows a player to receive staff alerts. |
+| `smartadmin.alerts` | `op` | Allows receiving staff alerts and toggling personal delivery. |
 | `smartadmin.reset` | `op` | Allows resetting a player's risk score. |
 | `smartadmin.note` | `op` | Allows adding staff notes to player timelines. |
 | `smartadmin.evidence` | `op` | Allows viewing evidence reports. |
